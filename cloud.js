@@ -14,7 +14,11 @@ function sdk() {
       import(BASE + 'firebase-firestore.js')
     ]);
     const a = app.initializeApp(cfg);
-    return { auth: auth.getAuth(a), db: fs.getFirestore(a), A: auth, F: fs };
+    /* تسجيل الدخول يفضل محفوظ على الجهاز حتى بعد قفل التطبيق */
+    let au;
+    try { au = auth.initializeAuth(a, { persistence: [auth.indexedDBLocalPersistence, auth.browserLocalPersistence] }); }
+    catch (e) { au = auth.getAuth(a); }
+    return { auth: au, db: fs.getFirestore(a), A: auth, F: fs };
   })();
   _sdk.catch(() => { _sdk = null; });
   return _sdk;
@@ -53,6 +57,21 @@ const Cloud = {
   async setProfile(uid, data) {
     const s = await sdk();
     await s.F.setDoc(s.F.doc(s.db, 'users', uid), clean(data), { merge: true });
+  },
+
+  async watchProfile(uid, cb) {
+    const s = await sdk();
+    return s.F.onSnapshot(s.F.doc(s.db, 'users', uid), d => cb(d.exists() ? d.data() : null), () => {});
+  },
+  async watchCoaches(cb) {
+    const s = await sdk();
+    const q = s.F.query(s.F.collection(s.db, 'users'), s.F.where('role', '==', 'coach'));
+    return s.F.onSnapshot(q, snap => cb(snap.docs.map(d => Object.assign({ uid: d.id }, d.data()))), () => cb([]));
+  },
+  async countClients(uid) {
+    const s = await sdk();
+    const r = await s.F.getCountFromServer(s.F.query(s.F.collection(s.db, 'users'), s.F.where('coachId', '==', uid)));
+    return r.data().count;
   },
 
   async coachByCode(code) {
