@@ -172,6 +172,7 @@ nav.tabs svg{width:22px;height:22px}
 <script type="module" src="cloud.js"></script>
 <script src="foods.js"></script>
 <script src="lang-en.js"></script>
+<script src="push-config.js"></script>
 <script>
 (function(){
 'use strict';
@@ -373,6 +374,7 @@ async function runSync(){
     const sm=makeSummary();
     await CLOUD.setProfile(uid,{summary:sm,name:S.profile.name});
     if(C.profile)C.profile.summary=sm;
+    if(C.profile&&C.profile.coachId){const wk=sm.workouts;if(typeof S.pushWk==='number'&&wk>S.pushWk)pushNotify(C.profile.coachId,S.profile.name||'Hassanfit',_('خلّص تمرين')+(sm.lastWorkout&&sm.lastWorkout.name?': '+sm.lastWorkout.name:''),'wk');S.pushWk=wk}
     S.lastSync=Date.now();saveLocal();sync.st='ok';
   }catch(e){sync.st='err'}
   sync.busy=false;setSync();
@@ -653,7 +655,7 @@ function ntAlert(it){
   toast(it.txt);
   try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
   try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.05;o.start();o.stop(a.currentTime+.14)}catch(e){}
-  try{if(document.hidden&&window.Notification&&Notification.permission==='granted'){
+  try{if(document.hidden&&!pushOn()&&window.Notification&&Notification.permission==='granted'){
     const o={body:it.txt,icon:'icon-192.png',tag:it.id};
     if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification('Hassanfit',o)).catch(()=>{});else new Notification('Hassanfit',o)}}catch(e){}
 }
@@ -716,6 +718,31 @@ function ntCoach(list){
   if(!NT.seen._i){NT.seen._i=1;ch=true}
   if(ch)ntPersist();
 }
+/* ----- background push (via the Cloudflare Worker) ----- */
+const PUSHCFG=window.PUSH||{};
+const pushOn=()=>!!(PUSHCFG.url&&PUSHCFG.key&&'serviceWorker' in navigator&&'PushManager' in window&&window.Notification);
+const pushKey=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(s+'='.repeat((4-s.length%4)%4)),c=>c.charCodeAt(0))};
+async function pushRegister(){
+  if(!pushOn()||!C.user||Notification.permission!=='granted')return false;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKey(PUSHCFG.key)});
+    const j=sub.toJSON(),rec={endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth},tag=C.user.uid+'|'+rec.endpoint;
+    let done='';try{done=localStorage.getItem('hassanfit.pushreg')||''}catch(e){}
+    if(done!==tag){await CLOUD.addPushSub(C.user.uid,rec);try{localStorage.setItem('hassanfit.pushreg',tag)}catch(e){}}
+    return true;
+  }catch(e){return false}
+}
+async function pushUnregister(){
+  try{if(!pushOn()||!C.user)return;const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+    if(sub)await CLOUD.removePushSub(C.user.uid,sub.endpoint);localStorage.removeItem('hassanfit.pushreg')}catch(e){}
+}
+async function pushNotify(to,title,body,tag){
+  if(!pushOn()||!to||!C.user)return;
+  try{const t=await CLOUD.idToken();if(!t)return;
+    fetch(PUSHCFG.url.replace(/\/$/,'')+'/notify',{method:'POST',headers:{Authorization:'Bearer '+t,'content-type':'application/json'},body:JSON.stringify({to,title,body,tag})}).catch(()=>{})}catch(e){}
+}
 function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];closeClient()}
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
 function msgsHtml(list,me){
@@ -774,7 +801,7 @@ async function afterLogin(user){
   try{
     let pr=await CLOUD.profile(user.uid);
     if(!pr){pr=Object.assign({role:'client',name:S.profile.name,email:user.email,createdAt:Date.now()},U.pending||{});U.pending=null;await CLOUD.setProfile(user.uid,pr)}
-    C.profile=pr;
+    C.profile=pr;pushRegister();
     if(pr.role==='coach'){
       if(!pr.code)await ensureCode();
       stopWatchers();
@@ -821,7 +848,7 @@ async function resetPw(){
   if(!email){U.authErr=_('اكتب إيميلك الأول');render();return}
   try{await CLOUD.reset(email);toast(_('بعتنالك رسالة على الإيميل'))}catch(e){toast(AUTHERR[e&&e.code]||_('تعذر الإرسال'))}
 }
-async function signOutNow(){try{await CLOUD.signOut()}catch(e){toast(_('تعذر تسجيل الخروج'))}}
+async function signOutNow(){try{await pushUnregister();await CLOUD.signOut()}catch(e){toast(_('تعذر تسجيل الخروج'))}}
 async function joinCoach(){
   const code=($('#jcode').value||'').trim().toUpperCase();if(!code)return;
   try{
@@ -845,7 +872,7 @@ async function syncNow(){
 async function sendMsg(from,uid){
   const el=$('#cmsg');const txt=el&&el.value.trim();if(!txt||!uid)return;
   el.value='';
-  try{const ts=Date.now();await CLOUD.sendMessage(uid,{from,txt,ts});if(from==='client')CLOUD.setProfile(uid,{lastMsg:{from:'client',txt:txt.slice(0,120),ts}}).catch(()=>{})}catch(e){toast(_('تعذر إرسال الرسالة'))}
+  try{const ts=Date.now();await CLOUD.sendMessage(uid,{from,txt,ts});if(from==='client'){CLOUD.setProfile(uid,{lastMsg:{from:'client',txt:txt.slice(0,120),ts}}).catch(()=>{});pushNotify(C.profile&&C.profile.coachId,S.profile.name||'Hassanfit',txt.slice(0,100),'msg')}else pushNotify(uid,(C.profile&&C.profile.name)||'Hassanfit',txt.slice(0,100),'msg')}catch(e){toast(_('تعذر إرسال الرسالة'))}
 }
 function installApp(){const p=U.deferred;if(!p)return;p.prompt();p.userChoice&&p.userChoice.then(()=>{U.deferred=null;render()})}
 function copyInv(){
@@ -1351,7 +1378,7 @@ document.addEventListener('click',function(ev){
    case 'ctab':U.cc.edit=null;U.modal=null;closeClient();U.cc.tab=d.v;U.cc.sel=null;U.cc.detail=null;renderCoachApp();window.scrollTo(0,0);break;
    case 'copen':openClient(d.id);break;
    case 'ntclear':ntRead();refreshInbox();break;
-   case 'ntperm':try{Notification.requestPermission().then(r=>{toast(r==='granted'?_('التنبيهات اتفعّلت'):_('التنبيهات مش متاحة على الجهاز ده'));refreshInbox();if(S.tab==='home'||isCoach())render()})}catch(e){toast(_('التنبيهات مش متاحة على الجهاز ده'))}break;
+   case 'ntperm':try{Notification.requestPermission().then(r=>{if(r==='granted')pushRegister();toast(r==='granted'?_('التنبيهات اتفعّلت'):_('التنبيهات مش متاحة على الجهاز ده'));refreshInbox();if(S.tab==='home'||isCoach())render()})}catch(e){toast(_('التنبيهات مش متاحة على الجهاز ده'))}break;
    case 'cplanedit':{const d0=U.cc.detail;if(!d0||!d0.T)break;const pl=d0.plan?JSON.parse(JSON.stringify(d0.plan)):{};pl.targets=pl.targets||{};pl.trainDays=pl.trainDays||[];pl.meals=pl.meals||[];pl.program=pl.program||null;pl.note=pl.note||'';pl.weekGoal=pl.weekGoal||'';U.cc.edit=pl;U.cc.fq='';U.cc.fqty='100';U.cc.fcat='all';renderCoachApp();window.scrollTo(0,0);break}
    case 'cplancancel':U.cc.edit=null;U.modal=null;renderCoachApp();window.scrollTo(0,0);break;
    case 'cplansave':saveClientPlan();break;

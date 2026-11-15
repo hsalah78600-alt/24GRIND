@@ -1,6 +1,6 @@
 /* Hassanfit service worker: يخلّي التطبيق يفتح بدون إنترنت، ويجيب النسخة الجديدة لما يكون في نت. */
-const CACHE = 'hassanfit-v6';
-const SHELL = ['./', 'index.html', 'cloud.js', 'firebase-config.js', 'manifest.webmanifest', 'foods.js', 'lang-en.js',
+const CACHE = 'hassanfit-v7';
+const SHELL = ['./', 'index.html', 'cloud.js', 'firebase-config.js', 'push-config.js', 'manifest.webmanifest', 'foods.js', 'lang-en.js',
   'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -44,4 +44,26 @@ self.addEventListener('fetch', e => {
       return cached || net;
     })
   );
+});
+
+/* تنبيهات الدفع: بتوصل حتى والتطبيق مقفول */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) {}
+  e.waitUntil((async () => {
+    const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (cs.some(c => c.visibilityState === 'visible')) return; /* التطبيق قدامه: الإشعار جوه التطبيق كفاية */
+    await self.registration.showNotification(d.title || 'Hassanfit', {
+      body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png',
+      tag: d.tag || 'hf', renotify: true, data: { url: d.url || './' }
+    });
+  })());
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of cs) { if ('focus' in c) return c.focus(); }
+    return self.clients.openWindow('./');
+  })());
 });

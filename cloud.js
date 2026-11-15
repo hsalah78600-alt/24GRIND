@@ -105,6 +105,27 @@ const Cloud = {
     const q = s.F.query(s.F.collection(s.db, 'users', uid, 'messages'), s.F.orderBy('ts'));
     return s.F.onSnapshot(q, snap => cb(snap.docs.map(d => Object.assign({ id: d.id }, d.data()))), () => cb([]));
   },
+  async idToken() {
+    const s = await sdk();
+    return s.auth.currentUser ? await s.auth.currentUser.getIdToken() : null;
+  },
+  async _pushList(uid) {
+    const s = await sdk();
+    const d = await s.F.getDoc(s.F.doc(s.db, 'pushSubs', uid));
+    const arr = d.exists() ? (d.data().subs || []) : [];
+    return arr.map(x => { try { return JSON.parse(x); } catch (e) { return null; } }).filter(Boolean);
+  },
+  async addPushSub(uid, rec) {
+    const s = await sdk();
+    const arr = (await Cloud._pushList(uid)).filter(x => x.endpoint !== rec.endpoint);
+    arr.unshift(rec);
+    await s.F.setDoc(s.F.doc(s.db, 'pushSubs', uid), { subs: arr.slice(0, 5).map(x => JSON.stringify(x)) });
+  },
+  async removePushSub(uid, endpoint) {
+    const s = await sdk();
+    const arr = (await Cloud._pushList(uid)).filter(x => x.endpoint !== endpoint);
+    await s.F.setDoc(s.F.doc(s.db, 'pushSubs', uid), { subs: arr.map(x => JSON.stringify(x)) });
+  },
   async sendMessage(uid, msg) {
     const s = await sdk();
     await s.F.addDoc(s.F.collection(s.db, 'users', uid, 'messages'), clean(msg));
