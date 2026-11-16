@@ -172,6 +172,7 @@ nav.tabs svg{width:22px;height:22px}
 <script type="module" src="cloud.js"></script>
 <script src="foods.js"></script>
 <script src="lang-en.js"></script>
+<script src="exercises.js"></script>
 <script src="push-config.js"></script>
 <script>
 (function(){
@@ -213,7 +214,10 @@ const EXS=[
 ['russian',_('روسيان تويست'),'بطن',_('وزن الجسم')],['abwheel',_('عجلة بطن'),'بطن',_('أخرى')],['hangleg',_('رفع رجل معلق'),'بطن',_('وزن الجسم')],['mount',_('ماونتن كلايمبر'),'بطن',_('وزن الجسم')],
 ['burpee',_('بيربي'),'جسم كامل',_('وزن الجسم')],['kbswing',_('كيتل بيل سوينج'),'جسم كامل',_('كيتل بيل')],['thruster',_('ثراستر'),'جسم كامل',_('دامبل')],['farmer',_('مشي المزارع'),'جسم كامل',_('دامبل')]
 ].map(a=>({id:a[0],n:a[1],m:a[2],e:a[3]}));
-const MUSCLES=['صدر','ضهر','رجل','كتف','دراع','بطن','جسم كامل'];
+(window.EXLIB||[]).forEach(x=>{if(!EXS.some(e=>e.id===x.id))EXS.push({id:x.id,n:_(x.n),m:x.m,e:_(x.e)})});
+(window.FEDB||[]).forEach(x=>EXS.push({id:'fe_'+x.i,n:_(x.n),m:x.m,e:_(x.e)}));
+const exLib=id=>window.exGet?window.exGet(id):null;
+const MUSCLES=['صدر','ضهر','رجل','كتف','دراع','بطن','جسم كامل','كارديو','هايروكس','إطالة'];
 const PROGRAMS={
  ppl:{n:_('دفع / سحب / رجل'),days:[
   {n:_('يوم الدفع'),ex:['bench','incdb','ohp','latr','tri']},{n:_('يوم السحب'),ex:['pullup','row','crow','rear','bic']},{n:_('يوم الرجل'),ex:['squat','legp','rdl','legc','calf']}]},
@@ -571,7 +575,7 @@ function vActive(){
   h+='<div style="margin:14px 2px 8px"><h2 style="margin:0">'+esc(a.name)+_('</h2><div class="muted">مدة التمرين <span class="num" id="elapsed">00:00</span> · ')+activeSets(a)+_n(activeSets(a),' مجموعة · ')+fmt(activeVol(a))+_(' كجم</div></div>');
   a.exercises.forEach((e,i)=>{
     const lp=lastPerf(e.ex);
-    h+='<div class="card"><div class="row sp"><div class="grow"><h3 style="margin:0">'+esc(exName(e.ex))+'</h3><div class="muted">'+(lp?_('آخر مرة: ')+lp.kg+_(' كجم × ')+lp.reps:_('أول مرة تسجله'))+'</div></div><button class="x" data-act="rmex" data-i="'+i+_('" aria-label="شيل التمرين">✕</button></div><div class="colhead"><span>#</span><span>كجم</span><span>عدّات</span><span></span></div>');
+    h+='<div class="card"><div class="row sp"><div class="grow"><h3 style="margin:0">'+esc(exName(e.ex))+'</h3><div class="muted">'+(lp?_('آخر مرة: ')+lp.kg+_(' كجم × ')+lp.reps:_('أول مرة تسجله'))+'</div></div>'+(exLib(e.ex)?'<button class="x" data-act="exinfo" data-id="'+esc(e.ex)+_('" aria-label="شرح التمرين">▶</button>'):'')+'<button class="x" data-act="rmex" data-i="'+i+_('" aria-label="شيل التمرين">✕</button></div><div class="colhead"><span>#</span><span>كجم</span><span>عدّات</span><span></span></div>');
     e.sets.forEach((s,j)=>{h+='<div class="setrow'+(s.done?' done':'')+(s.pr?' pr':'')+'"><span class="n">'+(s.pr?'★':(j+1))+'</span><input inputmode="decimal" data-k="kg" data-i="'+i+'" data-j="'+j+'" value="'+esc(s.kg)+_('" aria-label="الوزن"><input inputmode="numeric" data-k="reps" data-i="')+i+'" data-j="'+j+'" value="'+esc(s.reps)+_('" aria-label="العدّات"><button class="chk')+(s.done?' on':'')+'" data-act="done" data-i="'+i+'" data-j="'+j+_('" aria-label="تمت">')+(s.done?'✓':'')+'</button></div>'});
     h+='<div class="row" style="margin-top:10px"><button class="btn alt sm" data-act="addset" data-i="'+i+_('">+ مجموعة</button>')+(e.sets.length>1?'<button class="btn alt sm" data-act="delset" data-i="'+i+_('">− مجموعة</button>'):'')+'</div></div>';
   });
@@ -1295,7 +1299,7 @@ function vSet(){
 function pickerList(q,m){
   q=(q||'').trim();
   const list=allEx().filter(e=>(m==='الكل'||e.m===m)&&(!q||e.n.includes(q)||(e.e||'').includes(q)));
-  return list.map(e=>'<button class="btn alt block" style="margin-bottom:8px;text-align:start" data-act="pick" data-id="'+esc(e.id)+'">'+esc(e.n)+' <span class="muted">· '+esc(_(e.m))+(e.e?' · '+esc(_(e.e)):'')+'</span></button>').join('')||_('<div class="muted">مفيش نتايج. اعمل تمرين جديد من تحت.</div>');
+  return list.map(e=>'<div class="row" style="margin-bottom:8px"><button class="btn alt block" style="flex:1;margin:0;text-align:start" data-act="pick" data-id="'+esc(e.id)+'">'+esc(e.n)+' <span class="muted">· '+esc(_(e.m))+(e.e?' · '+esc(_(e.e)):'')+'</span></button>'+(exLib(e.id)?'<button class="btn line sm" data-act="exinfo" data-id="'+esc(e.id)+_('" aria-label="شرح التمرين">▶</button>'):'')+'</div>').join('')||_('<div class="muted">مفيش نتايج. اعمل تمرين جديد من تحت.</div>');
 }
 function renderLayer(){
   const L=$('#layer'),m=U.modal;
@@ -1303,6 +1307,13 @@ function renderLayer(){
   let b='';
   if(m==='picker'){
     b=_('<div class="row sp"><h3 style="margin:0">اختار تمرين</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div><input id="psearch" placeholder="دوّر على تمرين" aria-label="بحث" style="margin:10px 0" value="')+esc(U.pq)+'">'+chips([['الكل','الكل']].concat(MUSCLES.map(x=>[x,x])),U.pm,'pm')+'<div id="plist">'+pickerList(U.pq,U.pm)+'</div>'+(U.pickMode==='cplan'?'':_('<div class="card" style="margin-top:10px"><h3>تمرين جديد</h3><div class="grid2"><input id="cxn" placeholder="اسم التمرين" aria-label="اسم التمرين"><select id="cxm" aria-label="العضلة">')+MUSCLES.map(x=>'<option value="'+x+'">'+_(x)+'</option>').join('')+_('</select></div><button class="btn block" style="margin-top:10px" data-act="addcustomex">أضف التمرين</button></div>'));
+  }else if(m==='exinfo'&&U.exi&&exLib(U.exi)){
+    const x=exLib(U.exi);
+    b='<div class="row sp"><h3 style="margin:0">'+esc(_(x.n))+_('</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div>')
+     +'<div id="exanim" style="background:rgba(127,140,170,.12);border-radius:12px;margin:10px 0 4px;padding:6px"></div>'
+     +'<div class="muted" style="font-size:12px;margin-bottom:10px">'+_('رسم توضيحي متحرك للحركة')+'</div>'
+     +'<h4 style="margin:6px 0">'+_('طريقة الأداء')+'</h4><ol id="exsteps" style="padding-inline-start:22px;margin:0 0 14px;line-height:1.9"></ol>'
+     +'<a class="btn block" target="_blank" rel="noopener" style="text-align:center;text-decoration:none" href="https://www.youtube.com/results?search_query='+encodeURIComponent((x.en||x.n)+' exercise proper form tutorial male')+'">▶ '+_('شوف فيديو على يوتيوب')+'</a>';
   }else if(m==='finish'&&S.active){
     const a=S.active;
     b=_('<h3>خلّصت تمرينك</h3><div class="grid3" style="margin-bottom:12px"><div class="stat"><b>')+Math.max(1,Math.round((Date.now()-a.start)/60000))+_('</b><span>دقيقة</span></div><div class="stat"><b>')+activeSets(a)+_('</b><span>مجموعة</span></div><div class="stat"><b>')+fmt(activeVol(a))+_('</b><span>كجم حجم</span></div></div><label class="f" for="fnote">ملاحظة لنفسك (اختياري)</label><textarea id="fnote" placeholder="حسّيت بإيه؟"></textarea>')+_('<button class="btn block" style="margin-top:12px" data-act="savepriv">حفظ التمرين</button>')+_('<button class="btn line block" style="margin-top:8px" data-act="closemodal">رجوع للتمرين</button>');
@@ -1334,6 +1345,7 @@ function renderLayer(){
     b='<h3>'+(r.id?_('تعديل روتين'):_('روتين جديد'))+_('</h3><label class="f" for="rname">اسم الروتين</label><input id="rname" value="')+esc(r.name)+'">'+(r.ex.length?'<div style="margin-top:10px">'+r.ex.map((id,i)=>'<div class="item"><div class="grow">'+esc(exName(id))+'</div><button class="x" data-act="rup" data-i="'+i+_('" aria-label="فوق">↑</button><button class="x" data-act="rdel" data-i="')+i+_('" aria-label="شيل">✕</button></div>')).join('')+'</div>':_('<div class="muted" style="margin:10px 0">ضيف تمارين للروتين.</div>'))+_('<button class="btn alt block" style="margin:10px 0" data-act="openpick" data-v="routine">+ أضف تمرين</button><div class="grid2"><button class="btn" data-act="saveroutine">احفظ</button><button class="btn line" data-act="closemodal">إلغاء</button></div>');
   }
   L.innerHTML='<div class="modal" data-act="closemodal"><div class="sheet" data-stop="1">'+b+'</div></div>';
+  if(m==='exinfo'&&window.exMedia&&exLib(U.exi))exMedia(exLib(U.exi),LANG);
 }
 
 /* ================= render ================= */
@@ -1424,7 +1436,8 @@ document.addEventListener('click',function(ev){
    case 'rup':{const i=+d.i;if(i>0){const x=U.re.ex;[x[i-1],x[i]]=[x[i],x[i-1]];U.re.name=($('#rname')&&$('#rname').value)||U.re.name;renderLayer()}break}
    case 'rdel':U.re.ex.splice(+d.i,1);U.re.name=($('#rname')&&$('#rname').value)||U.re.name;renderLayer();break;
    case 'openpick':if(U.modal==='routine'&&U.re&&$('#rname'))U.re.name=$('#rname').value;U.pickMode=d.v||'active';U.pq='';U.modal='picker';renderLayer();break;
-   case 'closemodal':U.modal=U.pickMode==='routine'&&U.modal==='picker'&&U.re?'routine':null;renderLayer();break;
+   case 'exinfo':U.exBack=U.modal==='picker'?'picker':null;U.exi=d.id;U.modal='exinfo';renderLayer();break;
+   case 'closemodal':if(U.modal==='exinfo'){U.modal=U.exBack||null;U.exBack=null;U.exi=null;renderLayer();break}U.modal=U.pickMode==='routine'&&U.modal==='picker'&&U.re?'routine':null;renderLayer();break;
    case 'pm':U.pm=d.v;renderLayer();break;
    case 'pick':{if(U.pickMode==='cplan'&&U.cc.edit){U.cc.edit.program.days[U.pi].ex.push(d.id);U.modal=null;renderCoachApp();break}
      if(U.pickMode==='routine'&&U.re){U.re.ex.push(d.id);U.modal='routine'}else{S.active.exercises.push(newEx(d.id));U.modal=null;saveLocal()}render();break}
