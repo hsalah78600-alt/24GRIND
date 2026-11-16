@@ -377,7 +377,6 @@ window.EN={
 "إجمالي الحجم 10,000 كجم": "Total volume of 10,000 kg",
 "إجمالي الحجم 100,000 كجم": "Total volume of 100,000 kg",
 "إشعارات جديدة": "New notifications",
-"إطالة": "Stretching",
 "إطالة 10 دقايق": "10 minutes of stretching",
 "إليبتيكال": "Elliptical",
 "إنجاز جديد: ": "Achievement unlocked: ",

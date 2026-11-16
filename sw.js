@@ -1,5 +1,5 @@
 /* Hassanfit service worker: يخلّي التطبيق يفتح بدون إنترنت، ويجيب النسخة الجديدة لما يكون في نت. */
-const CACHE = 'hassanfit-v10';
+const CACHE = 'hassanfit-v9';
 const SHELL = ['./', 'index.html', 'cloud.js', 'firebase-config.js', 'push-config.js', 'manifest.webmanifest', 'foods.js', 'lang-en.js', 'exercises.js',
   'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 

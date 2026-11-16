@@ -215,9 +215,8 @@ const EXS=[
 ['burpee',_('بيربي'),'جسم كامل',_('وزن الجسم')],['kbswing',_('كيتل بيل سوينج'),'جسم كامل',_('كيتل بيل')],['thruster',_('ثراستر'),'جسم كامل',_('دامبل')],['farmer',_('مشي المزارع'),'جسم كامل',_('دامبل')]
 ].map(a=>({id:a[0],n:a[1],m:a[2],e:a[3]}));
 (window.EXLIB||[]).forEach(x=>{if(!EXS.some(e=>e.id===x.id))EXS.push({id:x.id,n:_(x.n),m:x.m,e:_(x.e)})});
-(window.FEDB||[]).forEach(x=>EXS.push({id:'fe_'+x.i,n:_(x.n),m:x.m,e:_(x.e)}));
-const exLib=id=>window.exGet?window.exGet(id):null;
-const MUSCLES=['صدر','ضهر','رجل','كتف','دراع','بطن','جسم كامل','كارديو','هايروكس','إطالة'];
+const exLib=id=>(window.EXLIB||[]).find(x=>x.id===id);
+const MUSCLES=['صدر','ضهر','رجل','كتف','دراع','بطن','جسم كامل','كارديو','هايروكس'];
 const PROGRAMS={
  ppl:{n:_('دفع / سحب / رجل'),days:[
   {n:_('يوم الدفع'),ex:['bench','incdb','ohp','latr','tri']},{n:_('يوم السحب'),ex:['pullup','row','crow','rear','bic']},{n:_('يوم الرجل'),ex:['squat','legp','rdl','legc','calf']}]},
@@ -1312,8 +1311,8 @@ function renderLayer(){
     b='<div class="row sp"><h3 style="margin:0">'+esc(_(x.n))+_('</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div>')
      +'<div id="exanim" style="background:rgba(127,140,170,.12);border-radius:12px;margin:10px 0 4px;padding:6px"></div>'
      +'<div class="muted" style="font-size:12px;margin-bottom:10px">'+_('رسم توضيحي متحرك للحركة')+'</div>'
-     +'<h4 style="margin:6px 0">'+_('طريقة الأداء')+'</h4><ol id="exsteps" style="padding-inline-start:22px;margin:0 0 14px;line-height:1.9"></ol>'
-     +'<a class="btn block" target="_blank" rel="noopener" style="text-align:center;text-decoration:none" href="https://www.youtube.com/results?search_query='+encodeURIComponent((x.en||x.n)+' exercise proper form tutorial male')+'">▶ '+_('شوف فيديو على يوتيوب')+'</a>';
+     +'<h4 style="margin:6px 0">'+_('طريقة الأداء')+'</h4><ol style="padding-inline-start:22px;margin:0 0 14px;line-height:1.9">'+(LANG==='en'?x.b:x.a).map(t=>'<li>'+esc(t)+'</li>').join('')+'</ol>'
+     +'<a class="btn block" target="_blank" rel="noopener" style="text-align:center;text-decoration:none" href="https://www.youtube.com/results?search_query='+encodeURIComponent(x.en+' exercise proper form tutorial male')+'">▶ '+_('شوف فيديو على يوتيوب')+'</a>';
   }else if(m==='finish'&&S.active){
     const a=S.active;
     b=_('<h3>خلّصت تمرينك</h3><div class="grid3" style="margin-bottom:12px"><div class="stat"><b>')+Math.max(1,Math.round((Date.now()-a.start)/60000))+_('</b><span>دقيقة</span></div><div class="stat"><b>')+activeSets(a)+_('</b><span>مجموعة</span></div><div class="stat"><b>')+fmt(activeVol(a))+_('</b><span>كجم حجم</span></div></div><label class="f" for="fnote">ملاحظة لنفسك (اختياري)</label><textarea id="fnote" placeholder="حسّيت بإيه؟"></textarea>')+_('<button class="btn block" style="margin-top:12px" data-act="savepriv">حفظ التمرين</button>')+_('<button class="btn line block" style="margin-top:8px" data-act="closemodal">رجوع للتمرين</button>');
@@ -1345,7 +1344,7 @@ function renderLayer(){
     b='<h3>'+(r.id?_('تعديل روتين'):_('روتين جديد'))+_('</h3><label class="f" for="rname">اسم الروتين</label><input id="rname" value="')+esc(r.name)+'">'+(r.ex.length?'<div style="margin-top:10px">'+r.ex.map((id,i)=>'<div class="item"><div class="grow">'+esc(exName(id))+'</div><button class="x" data-act="rup" data-i="'+i+_('" aria-label="فوق">↑</button><button class="x" data-act="rdel" data-i="')+i+_('" aria-label="شيل">✕</button></div>')).join('')+'</div>':_('<div class="muted" style="margin:10px 0">ضيف تمارين للروتين.</div>'))+_('<button class="btn alt block" style="margin:10px 0" data-act="openpick" data-v="routine">+ أضف تمرين</button><div class="grid2"><button class="btn" data-act="saveroutine">احفظ</button><button class="btn line" data-act="closemodal">إلغاء</button></div>');
   }
   L.innerHTML='<div class="modal" data-act="closemodal"><div class="sheet" data-stop="1">'+b+'</div></div>';
-  if(m==='exinfo'&&window.exMedia&&exLib(U.exi))exMedia(exLib(U.exi),LANG);
+  if(m==='exinfo'&&window.ExAnim&&exLib(U.exi)){const el=document.getElementById('exanim');if(el)ExAnim.mount(el,exSpec(exLib(U.exi)))}
 }
 
 /* ================= render ================= */
