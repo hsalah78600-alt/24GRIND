@@ -571,7 +571,6 @@ window.EN={
 "رجّعه": "Restore",
 "رسالة من ": "Message from ",
 "رسالة من مدربك": "Message from your coach",
-"رسم توضيحي متحرك للحركة": "Animated illustration of the movement",
 "رفرفة أمامي": "Front raise",
 "رفرفة جانبي": "Lateral raise",
 "رفرفة خلفي": "Rear delt raise",
