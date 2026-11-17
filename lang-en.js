@@ -395,6 +395,7 @@ window.EN={
 "اتستورد الملف": "File imported",
 "اتسجّل": "Logged",
 "اتسجّلت الوجبة": "Meal logged",
+"اتضاف التمرين": "Exercise added",
 "اتضافت": "Added",
 "اتضافت على ": "Added to ",
 "اتعدّل التمرين": "Workout updated",

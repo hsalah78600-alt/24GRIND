@@ -1436,10 +1436,12 @@ document.addEventListener('click',function(ev){
    case 'rdel':U.re.ex.splice(+d.i,1);U.re.name=($('#rname')&&$('#rname').value)||U.re.name;renderLayer();break;
    case 'openpick':if(U.modal==='routine'&&U.re&&$('#rname'))U.re.name=$('#rname').value;U.pickMode=d.v||'active';U.pq='';U.modal='picker';renderLayer();break;
    case 'exinfo':U.exBack=U.modal==='picker'?'picker':null;U.exi=d.id;U.modal='exinfo';renderLayer();break;
-   case 'closemodal':if(U.modal==='exinfo'){U.modal=U.exBack||null;U.exBack=null;U.exi=null;renderLayer();break}U.modal=U.pickMode==='routine'&&U.modal==='picker'&&U.re?'routine':null;renderLayer();break;
+   case 'closemodal':if(U.modal==='exinfo'){U.modal=U.exBack||null;U.exBack=null;U.exi=null;renderLayer();break}var wasP=U.modal==='picker';U.modal=U.pickMode==='routine'&&U.modal==='picker'&&U.re?'routine':null;renderLayer();if(wasP&&U.pickDirty){U.pickDirty=0;if(U.pickMode==='cplan'&&U.cc&&U.cc.edit)renderCoachApp();else render()}break;
    case 'pm':U.pm=d.v;renderLayer();break;
-   case 'pick':{if(U.pickMode==='cplan'&&U.cc.edit){U.cc.edit.program.days[U.pi].ex.push(d.id);U.modal=null;renderCoachApp();break}
-     if(U.pickMode==='routine'&&U.re){U.re.ex.push(d.id);U.modal='routine'}else{S.active.exercises.push(newEx(d.id));U.modal=null;saveLocal()}render();break}
+   case 'pick':{if(U.pickMode==='cplan'&&U.cc.edit){U.cc.edit.program.days[U.pi].ex.push(d.id)}
+     else if(U.pickMode==='routine'&&U.re){U.re.ex.push(d.id)}else{S.active.exercises.push(newEx(d.id));saveLocal()}
+     U.pickDirty=1;{const bt=document.querySelector('#plist button[data-act="pick"][data-id="'+String(d.id).replace(/["\\]/g,'')+'"]');if(bt)bt.insertAdjacentHTML('afterbegin','<b style="color:#22c55e">✓ </b>')}
+     toast(_('اتضاف التمرين'));break}
    case 'addcustomex':{const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();S.customEx.push({id,n,m:$('#cxm').value,e:_('مخصص')});save();
      if(U.pickMode==='routine'&&U.re){U.re.ex.push(id);U.modal='routine'}else if(S.active){S.active.exercises.push(newEx(id));U.modal=null}render();break}
    case 'addset':{const e=S.active.exercises[+d.i];const l=e.sets[e.sets.length-1]||{};e.sets.push({kg:l.kg||'',reps:l.reps||'',done:false});saveLocal();render();break}
