@@ -343,7 +343,7 @@ var byId={};
 (window.EXLIB||[]).forEach(function(x){byId[x.id]=x;if(window.FEMAP&&window.FEMAP[x.id])x.img=window.FEMAP[x.id]});
 (window.FEDB||[]).forEach(function(x){byId['fe_'+x.i]={id:'fe_'+x.i,a:(window.FEST&&window.FEST[x.i]||[])[0],b:(window.FEST&&window.FEST[x.i]||[])[1],n:x.n,en:(window.EN&&window.EN[x.n])||x.i.replace(/_/g,' '),m:x.m,e:x.e,img:x.i,fe:1}});
 window.exGet=function(id){return byId[id]||null};
-window.exThumb=function(id){var x=byId[id];if(!x||!x.img)return '';return '<img src="'+RAW+'exercises/'+x.img+'/0.jpg" loading="lazy" alt="" width="52" height="52" style="width:52px;height:52px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-inline-end:10px;background:#fff" onerror="this.style.display=\'none\'">'};
+window.exThumb=function(id){var x=byId[id];if(!x||!x.img)return '';return '<img src="'+RAW+'exercises/'+x.img+'/0.jpg" loading="lazy" alt="" width="52" height="52" style="width:52px;height:52px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-inline-end:10px;background:#fff" onerror="this.style.visibility=\'hidden\'">'};
 window.exAll=function(){return window.FEDB.map(function(x){return byId['fe_'+x.i]})};
 var feAll=null;
 function loadAll(){if(!feAll)feAll=fetch(RAW+'dist/exercises.json').then(function(r){if(!r.ok)throw 0;return r.json()});return feAll}
@@ -371,13 +371,13 @@ window.exMedia=function(x,lang){
   }
   if(!st)return;
   var own=lang==='en'?x.b:x.a;
-  if(own){st.innerHTML=own.map(function(s){return '<li>'+esc(s)+'</li>'}).join('');return}
+  if(own){st.innerHTML=own.map(function(s){return '<li style="margin-bottom:12px">'+esc(s)+'</li>'}).join('');return}
   st.innerHTML='<li style="list-style:none" class="muted">'+esc(t.load)+'</li>';
   loadAll().then(function(all){
     if(!st.isConnected)return;
     var r=all.filter(function(o){return o.id===x.img})[0];
     if(!r||!r.instructions||!r.instructions.length)throw 0;
-    st.innerHTML=(lang==='en'?'':'<li style="list-style:none;margin-inline-start:-22px" class="muted">'+esc(t.en)+'</li>')+r.instructions.map(function(s){return '<li dir="ltr" style="text-align:left">'+esc(s)+'</li>'}).join('');
+    st.innerHTML=(lang==='en'?'':'<li style="list-style:none;margin-inline-start:-22px" class="muted">'+esc(t.en)+'</li>')+r.instructions.map(function(s){return '<li dir="ltr" style="text-align:left;margin-bottom:12px">'+esc(s)+'</li>'}).join('');
   }).catch(function(){if(st.isConnected)st.innerHTML='<li style="list-style:none" class="muted">'+esc(t.fail)+'</li>'});
 };
 })();

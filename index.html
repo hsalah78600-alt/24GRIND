@@ -218,8 +218,10 @@ const EXS=[
 (window.FEDB||[]).forEach(x=>EXS.push({id:'fe_'+x.i,n:_(x.n),m:x.m,e:_(x.e)}));
 const exLib=id=>window.exGet?window.exGet(id):null;
 function exArr(){if(U.pickMode==='cplan'&&U.cc&&U.cc.edit)return U.cc.edit.program.days[U.pi].ex;if(U.pickMode==='routine'&&U.re)return U.re.ex;return null}
-function exAdd(id){const a=exArr();if(a)a.push(id);else if(S.active){S.active.exercises.push(newEx(id));saveLocal()}else return false;U.pickDirty=1;return true}
-function exRm(id){const a=exArr();let i;if(a){i=a.lastIndexOf(id);if(i<0)return false;a.splice(i,1)}else if(S.active){const l=S.active.exercises;i=l.map(e=>e.ex).lastIndexOf(id);if(i<0)return false;l.splice(i,1);saveLocal()}else return false;U.pickDirty=1;return true}
+function exMark(id){const bt=document.querySelector('#plist button[data-id="'+String(id).replace(/["\\]/g,'')+'"]');if(!bt)return;const o=bt.querySelector('b');if(o)o.remove();const n=(U.pc||{})[id]||0;if(n)bt.insertAdjacentHTML('afterbegin','<b style="color:#22c55e">✓'+(n>1?' ×'+n:'')+' </b>')}
+function exClose(){const bk=U.exBack;U.modal=bk||null;U.exBack=null;U.exi=null;renderLayer();if(bk){const sh=document.querySelector('.sheet');if(sh)sh.scrollTop=U.exScroll||0}else if(U.pickDirty){U.pickDirty=0;render()}}
+function exAdd(id){const a=exArr();if(a)a.push(id);else if(S.active){S.active.exercises.push(newEx(id));saveLocal()}else return false;U.pc=U.pc||{};U.pc[id]=(U.pc[id]||0)+1;U.pickDirty=1;return true}
+function exRm(id){const a=exArr();let i;if(a){i=a.lastIndexOf(id);if(i<0)return false;a.splice(i,1)}else if(S.active){const l=S.active.exercises;i=l.map(e=>e.ex).lastIndexOf(id);if(i<0)return false;l.splice(i,1);saveLocal()}else return false;U.pc=U.pc||{};if(U.pc[id])U.pc[id]--;U.pickDirty=1;return true}
 const MUSCLES=['صدر','ضهر','رجل','كتف','دراع','بطن','جسم كامل','كارديو','هايروكس','إطالة'];
 const PROGRAMS={
  ppl:{n:_('دفع / سحب / رجل'),days:[
@@ -1302,7 +1304,7 @@ function vSet(){
 function pickerList(q,m){
   q=(q||'').trim();
   const list=allEx().filter(e=>(m==='الكل'||e.m===m)&&(!q||e.n.includes(q)||(e.e||'').includes(q)));
-  return list.map(e=>'<div class="row" style="margin-bottom:8px"><button class="btn alt block" style="flex:1;margin:0;text-align:start" data-act="pick" data-id="'+esc(e.id)+'">'+(window.exThumb?exThumb(e.id):'')+esc(e.n)+' <span class="muted">· '+esc(_(e.m))+(e.e?' · '+esc(_(e.e)):'')+'</span></button><button class="btn line sm" data-act="unpick" data-id="'+esc(e.id)+'" aria-label="'+_('شيل التمرين')+'">−</button>'+(exLib(e.id)?'<button class="btn line sm" data-act="exinfo" data-id="'+esc(e.id)+_('" aria-label="شرح التمرين">▶</button>'):'')+'</div>').join('')||_('<div class="muted">مفيش نتايج. اعمل تمرين جديد من تحت.</div>');
+  return list.map(e=>'<div class="row" style="margin-bottom:8px"><button class="btn alt block" style="flex:1;margin:0;text-align:start" data-act="'+(exLib(e.id)?'exinfo':'pick')+'" data-id="'+esc(e.id)+'">'+(window.exThumb?exThumb(e.id):'')+((U.pc||{})[e.id]?'<b style="color:#22c55e">✓'+(U.pc[e.id]>1?' ×'+U.pc[e.id]:'')+' </b>':'')+esc(e.n)+' <span class="muted">· '+esc(_(e.m))+(e.e?' · '+esc(_(e.e)):'')+'</span></button><button class="btn line sm" data-act="pick" data-id="'+esc(e.id)+'" aria-label="'+_('أضيف التمرين')+'">+</button><button class="btn line sm" data-act="unpick" data-id="'+esc(e.id)+'" aria-label="'+_('شيل التمرين')+'">−</button></div>').join('')||_('<div class="muted">مفيش نتايج. اعمل تمرين جديد من تحت.</div>');
 }
 function renderLayer(){
   const L=$('#layer'),m=U.modal;
@@ -1438,15 +1440,14 @@ document.addEventListener('click',function(ev){
      U.modal=null;U.re=null;save();render();break}
    case 'rup':{const i=+d.i;if(i>0){const x=U.re.ex;[x[i-1],x[i]]=[x[i],x[i-1]];U.re.name=($('#rname')&&$('#rname').value)||U.re.name;renderLayer()}break}
    case 'rdel':U.re.ex.splice(+d.i,1);U.re.name=($('#rname')&&$('#rname').value)||U.re.name;renderLayer();break;
-   case 'openpick':if(U.modal==='routine'&&U.re&&$('#rname'))U.re.name=$('#rname').value;U.pickMode=d.v||'active';U.pq='';U.modal='picker';renderLayer();break;
+   case 'openpick':if(U.modal==='routine'&&U.re&&$('#rname'))U.re.name=$('#rname').value;U.pickMode=d.v||'active';U.pq='';U.pc={};U.modal='picker';renderLayer();break;
    case 'exinfo':U.exBack=U.modal==='picker'?'picker':null;if(!U.exBack)U.pickMode='active';U.exScroll=(document.querySelector('.sheet')||{}).scrollTop||0;U.exi=d.id;U.modal='exinfo';renderLayer();break;
-   case 'closemodal':if(U.modal==='exinfo'){const bk=U.exBack;U.modal=bk||null;U.exBack=null;U.exi=null;renderLayer();if(bk){const sh=document.querySelector('.sheet');if(sh)sh.scrollTop=U.exScroll||0}else if(U.pickDirty){U.pickDirty=0;render()}break}var wasP=U.modal==='picker';U.modal=U.pickMode==='routine'&&U.modal==='picker'&&U.re?'routine':null;renderLayer();if(wasP&&U.pickDirty){U.pickDirty=0;if(U.pickMode==='cplan'&&U.cc&&U.cc.edit)renderCoachApp();else render()}break;
+   case 'closemodal':if(U.modal==='exinfo'){exClose();break}var wasP=U.modal==='picker';U.modal=U.pickMode==='routine'&&U.modal==='picker'&&U.re?'routine':null;renderLayer();if(wasP&&U.pickDirty){U.pickDirty=0;if(U.pickMode==='cplan'&&U.cc&&U.cc.edit)renderCoachApp();else render()}break;
    case 'pm':U.pm=d.v;renderLayer();break;
-   case 'pick':{exAdd(d.id);{const bt=document.querySelector('#plist button[data-act="pick"][data-id="'+String(d.id).replace(/["\\]/g,'')+'"]');if(bt)bt.insertAdjacentHTML('afterbegin','<b style="color:#22c55e">✓ </b>')}
-     toast(_('اتضاف التمرين'));break}
-   case 'unpick':{if(exRm(d.id)){const bt=document.querySelector('#plist button[data-act="pick"][data-id="'+String(d.id).replace(/["\\]/g,'')+'"]');const c=bt&&bt.querySelector('b');if(c)c.remove();toast(_('اتشال التمرين'))}else toast(_('التمرين مش مضاف'));break}
-   case 'exadd':{if(exAdd(d.id))toast(_('اتضاف التمرين'));break}
-   case 'exrm':{if(exRm(d.id))toast(_('اتشال التمرين'));else toast(_('التمرين مش مضاف'));break}
+   case 'pick':{exAdd(d.id);exMark(d.id);toast(_('اتضاف التمرين'));break}
+   case 'unpick':{if(exRm(d.id)){exMark(d.id);toast(_('اتشال التمرين'))}else toast(_('التمرين مش مضاف'));break}
+   case 'exadd':{if(exAdd(d.id))toast(_('اتضاف التمرين'));exClose();break}
+   case 'exrm':{if(exRm(d.id))toast(_('اتشال التمرين'));else toast(_('التمرين مش مضاف'));exClose();break}
    case 'addcustomex':{const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();S.customEx.push({id,n,m:$('#cxm').value,e:_('مخصص')});save();
      if(U.pickMode==='routine'&&U.re){U.re.ex.push(id);U.modal='routine'}else if(S.active){S.active.exercises.push(newEx(id));U.modal=null}render();break}
    case 'addset':{const e=S.active.exercises[+d.i];const l=e.sets[e.sets.length-1]||{};e.sets.push({kg:l.kg||'',reps:l.reps||'',done:false});saveLocal();render();break}
