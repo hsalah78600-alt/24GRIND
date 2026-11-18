@@ -364,7 +364,6 @@ window.exMedia=function(x,lang){
       im.src=a.src;box.innerHTML='';box.appendChild(im);
       b.onload=function(){var k=0;var iv=setInterval(function(){if(!box.isConnected){clearInterval(iv);return}k^=1;im.src=k?b.src:a.src},900)};
       b.src=RAW+'exercises/'+x.img+'/1.jpg';
-      var c=document.createElement('div');c.className='muted';c.style.cssText='font-size:11px;text-align:center;margin-top:4px';c.textContent=t.src;box.appendChild(c);
     };
     a.onerror=function(){if(box.isConnected)box.innerHTML='<div class="muted" style="padding:30px 10px;text-align:center">'+esc(t.noimg)+'</div>'};
     a.src=RAW+'exercises/'+x.img+'/0.jpg';

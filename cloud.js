@@ -145,6 +145,15 @@ const Cloud = {
     const arr = (await Cloud._pushList(uid)).filter(x => x.endpoint !== endpoint);
     await s.F.setDoc(s.F.doc(s.db, 'pushSubs', uid), { subs: arr.map(x => JSON.stringify(x)) });
   },
+  async adminInfo() {
+    const s = await sdk();
+    const d = await s.F.getDoc(s.F.doc(s.db, 'adminInfo', 'main'));
+    return d.exists() ? d.data() : null;
+  },
+  async setAdminInfo(data) {
+    const s = await sdk();
+    await s.F.setDoc(s.F.doc(s.db, 'adminInfo', 'main'), clean(data));
+  },
   async sendMessage(uid, msg) {
     const s = await sdk();
     await s.F.addDoc(s.F.collection(s.db, 'users', uid, 'messages'), clean(msg));
