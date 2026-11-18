@@ -368,7 +368,7 @@ function makeSummary(){
   const dates=[...activeDates()].sort();
   let kc=0,nd=0;
   for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()-i);const t=dayTotals(dkey(d)).k;if(t){kc+=t;nd++}}
-  return {ts:Date.now(),lastActive:dates[dates.length-1]||'',streak:si.n,weekN:ws.n,weekGoal:+S.profile.weekGoal||4,weekVol:Math.round(ws.vol),
+  return {ts:Date.now(),lastActive:dates[dates.length-1]||'',streak:si.n,weekN:ws.n,weekGoal:+S.profile.weekGoal||4,sex:S.profile.sex||'',weekVol:Math.round(ws.vol),
     weight:S.weights.length?S.weights[S.weights.length-1].kg:S.profile.weight,kcalAvg:nd?Math.round(kc/nd):0,workouts:S.workouts.length,lastWorkout:S.workouts.length?{name:S.workouts[S.workouts.length-1].name||''}:null};
 }
 function schedSync(){
@@ -579,6 +579,7 @@ function vTrain(){
 
 function vActive(){
   const a=S.active;
+  if(a.pending)return vPending(a);
   let h='<div class="rest" id="restbar"'+(U.rest?'':' hidden')+_('><div class="row sp"><b>راحة <span class="num" id="resttime">00:00</span></b><span class="row"><button class="btn sm" data-act="restadd" data-v="-15">−15</button><button class="btn sm" data-act="restadd" data-v="15">+15</button><button class="btn sm" data-act="restskip">تخطي</button></span></div></div>');
   h+='<div style="margin:14px 2px 8px"><h2 style="margin:0">'+esc(a.name)+_('</h2><div class="muted">مدة التمرين <span class="num" id="elapsed">00:00</span> · ')+activeSets(a)+_n(activeSets(a),' مجموعة · ')+fmt(activeVol(a))+_(' كجم</div></div>');
   a.exercises.forEach((e,i)=>{
@@ -1074,6 +1075,64 @@ function offSearch(q){
     }catch(e){if(my!==offSeq)return;const b2=$('#foff');if(b2)b2.innerHTML='<div class="muted" style="padding:8px 0">'+_('تعذر البحث على الإنترنت')+'</div>'}
   },650);
 }
+/* ----- sex field, pending workout, auto macros in "new food" form ----- */
+const sexOf=c=>{const v=(c&&(c.sex||(c.summary&&c.summary.sex)))||'';return v==='m'||v==='f'?v:'u'};
+function vPending(a){
+  let h='<div style="margin:14px 2px 8px"><h2 style="margin:0">'+esc(a.name)+'</h2><div class="muted">'+_('اختار تمارينك وبعدين دوس ابدأ التمرين')+'</div></div>';
+  a.exercises.forEach((e,i)=>{h+='<div class="card"><div class="row sp"><b>'+esc(exName(e.ex))+'</b><button class="x" data-act="rmex" data-i="'+i+'" aria-label="'+_('شيل التمرين')+'">✕</button></div></div>'});
+  h+='<button class="btn line block" data-act="openpick" data-v="active" style="margin-bottom:10px">'+_('+ أضف تمرين')+'</button>';
+  h+='<div class="grid2"><button class="btn block" data-act="beginw"'+(a.exercises.length?'':' disabled')+'>'+_('ابدأ التمرين')+'</button><button class="btn danger block" data-act="cancelyes">'+_('إلغاء')+'</button></div>';
+  return h;
+}
+let cfT=null,cfSeq=0;
+const cfAuto=()=>{const k=$('#ck');if(!k)return false;return k.dataset.auto==='1'||(!k.value&&!($('#cp')||{}).value&&!($('#cc')||{}).value&&!($('#cf')||{}).value)};
+function cfBox(){
+  let m=$('#cfmsg');if(m)return;const n=$('#cn');if(!n)return;const g=n.closest('.grid2');if(!g)return;
+  g.insertAdjacentHTML('afterend','<div id="cfmsg" class="muted" style="margin-top:8px"></div><div id="cfsug"></div>');
+}
+function cfRows(L){
+  return L.map((f,i)=>'<button class="frow" data-act="cfpick" data-i="'+i+'"><span class="grow"><span>'+esc(fName(f))+'</span><span class="muted num" style="display:block;font-size:12px;margin-top:2px">'+_('بروتين')+' '+f1(f.p)+' · '+_('كارب')+' '+f1(f.c)+' · '+_('دهون')+' '+f1(f.f)+'</span></span><span class="muted num" style="text-align:end"><b style="color:var(--fg)">'+fmt(f.k)+'</b> '+_('سعر')+'<span style="display:block;font-size:11px">'+_('لكل 100 ')+unitLbl(f.u)+'</span></span></button>').join('');
+}
+function cfFill(f){
+  const set=(id,v)=>{const e=$('#'+id);if(e)e.value=v};
+  set('ck',f.k);set('cp',f1(f.p));set('cc',f1(f.c));set('cf',f1(f.f));
+  const u=$('#cu');if(u)u.value=f.u==='ml'?'ml':'g';
+  const k=$('#ck');if(k)k.dataset.auto='1';
+  const m=$('#cfmsg');if(m)m.textContent='✓ '+_('اتحسبت القيم لكل 100 تلقائي من:')+' '+(f.e&&/[a-z]/i.test(f.e)&&!/[؀-ۿ]/.test(f.n)?f.e:fName(f));
+}
+async function offFetch(q){
+  const ctl=window.AbortController?new AbortController():null;const to=setTimeout(()=>ctl&&ctl.abort(),9000);
+  try{
+    const r=await fetch('https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=12&fields=product_name,product_name_ar,product_name_en,brands,nutriments&search_terms='+encodeURIComponent(q),ctl?{signal:ctl.signal}:{});
+    const j=await r.json();const seen={},L=[];
+    (j.products||[]).forEach(p=>{
+      const n=p.nutriments||{};const k=+n['energy-kcal_100g'];if(!(k>=0)||(!p.product_name&&!p.product_name_ar&&!p.product_name_en))return;
+      const nm=String(p.product_name_ar||p.product_name||p.product_name_en).trim().slice(0,60);const key=nm.toLowerCase();if(!nm||seen[key])return;seen[key]=1;
+      const r1=v=>Math.round((+v||0)*10)/10;
+      L.push({n:nm+(p.brands?' – '+String(p.brands).split(',')[0].trim().slice(0,24):''),e:nm,k:Math.round(k),p:r1(n.proteins_100g),c:r1(n.carbohydrates_100g),f:r1(n.fat_100g),u:'g',s:[],cat:'off'});
+    });
+    return L.slice(0,6);
+  }finally{clearTimeout(to)}
+}
+function cfSearch(q){
+  cfBox();clearTimeout(cfT);q=(q||'').trim();const sug=$('#cfsug'),msg=$('#cfmsg');if(!sug)return;
+  const my=++cfSeq;
+  if(q.length<2){U.cfs=[];sug.innerHTML='';if(msg)msg.textContent='';return}
+  const L=foodMatches(q,'all',true).slice(0,5);U.cfs=L;sug.innerHTML=cfRows(L);
+  if(L.length){if(cfAuto())cfFill(L[0])}else if(msg)msg.textContent='';
+  if(L.length>=3)return;
+  if(!L.length&&msg)msg.textContent=_('بدوّر في قاعدة الأكل العالمية…');
+  cfT=setTimeout(async()=>{
+    try{
+      const O=await offFetch(q);if(my!==cfSeq)return;
+      U.cfs=L.concat(O);const s2=$('#cfsug');if(s2)s2.innerHTML=cfRows(U.cfs);
+      if(!L.length){if(O.length){if(cfAuto())cfFill(O[0])}else if(msg)msg.textContent=_('مفيش نتايج على الإنترنت')}
+    }catch(e){if(my===cfSeq&&!L.length&&msg)msg.textContent=_('تعذر البحث على الإنترنت')}
+  },650);
+}
+function regSex(){
+  return '<label class="f" for="a_sex">'+_('النوع')+'</label><select id="a_sex" style="margin-bottom:10px"><option value="">'+_('اختار النوع')+'</option><option value="m"'+(U.pSex==='m'?' selected':'')+'>'+_('ذكر')+'</option><option value="f"'+(U.pSex==='f'?' selected':'')+'>'+_('أنثى')+'</option></select>';
+}
 function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];closeClient()}
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
 function msgsHtml(list,me){
@@ -1101,7 +1160,7 @@ function vAuth(){
   if(up){
     h+=_('<label class="f">أنا</label><div class="chips">')+[['client',_('عميل')],['coach',_('مدرب')]].map(a=>'<button class="chip'+(U.signRole===a[0]?' on':'')+'" data-act="srole" data-v="'+a[0]+'">'+a[1]+'</button>').join('')+'</div>';
     h+=_('<label class="f" for="a_name">الاسم</label><input id="a_name" autocomplete="name" value="')+esc(S.profile.name)+'" style="margin-bottom:10px">';
-    h+=regExtra();
+    h+=regSex();h+=regExtra();
   }
   h+=_('<label class="f" for="a_email">الإيميل</label><input id="a_email" type="email" autocomplete="email" inputmode="email" style="direction:ltr;margin-bottom:10px">')+
      _('<label class="f" for="a_pw">الباسورد</label><input id="a_pw" type="password" autocomplete="')+(up?'new-password':'current-password')+'" style="direction:ltr">';
@@ -1171,9 +1230,11 @@ async function doAuth(){
     const name=$('#a_name').value.trim();
     if(!name){U.authErr=_('اكتب اسمك');render();return}
     if(!$('#a_consent').checked){U.authErr=_('لازم توافق عشان تكمل');render();return}
+    const sx=(($('#a_sex')||{}).value||'');if(sx!=='m'&&sx!=='f'){U.authErr=_('اختار النوع (ذكر أو أنثى)');render();return}
+    S.profile.sex=sx;U.pSex=sx;
     const ph=(($('#a_phone')||{}).value||'').trim().slice(0,25);U.pPhone=ph;
     if(!phOk(ph)){U.authErr=_('اكتب رقم تليفونك صح');render();return}
-    U.pending={role:U.signRole,name,phone:ph};if(U.pAv)U.pending.avatar=U.pAv;S.profile.name=name;saveLocal();
+    U.pending={role:U.signRole,name,phone:ph,sex:sx};if(U.pAv)U.pending.avatar=U.pAv;S.profile.name=name;saveLocal();
   }
   U.authBusy=true;U.authErr='';render();
   try{if(up)await CLOUD.signUp(email,pw);else await CLOUD.signIn(email,pw)}
@@ -1246,7 +1307,10 @@ function vClients0(){
   const idleOf=c=>{const la=(c.summary||{}).lastActive;return la?Math.round((today-parseKey(la))/864e5):null};
   const need=L.filter(c=>{const d=idleOf(c);return d===null||d>=3}).length;
   h+='<div class="grid3" style="margin-bottom:12px"><div class="stat"><b>'+L.length+_('</b><span>عميل</span></div><div class="stat"><b>')+(L.length-need)+_('</b><span>نشطين</span></div><div class="stat"><b>')+need+_('</b><span>محتاج متابعة</span></div></div>');
+  const GO={m:0,f:1,u:2};L.sort((a,b)=>GO[sexOf(a)]-GO[sexOf(b)]);
+  const GC={m:0,f:0,u:0};L.forEach(x=>GC[sexOf(x)]++);let lastG=null;
   L.forEach(c=>{
+    const g=sexOf(c);if(g!==lastG){lastG=g;h+='<h3 style="margin:16px 0 8px">'+(g==='m'?_('العملاء الذكور'):g==='f'?_('العميلات الإناث'):_('غير محدد'))+' ('+GC[g]+')</h3>'}
     const s=c.summary||{},idle=idleOf(c);
     const pill=idle===null?_('<span class="pill bad">لسه مبدأش</span>'):idle===0?_('<span class="pill good">نشط النهاردة</span>'):idle>=3?_('<span class="pill bad">من ')+idle+_n(idle,' يوم</span>'):_('<span class="pill">من ')+idle+_n(idle,' يوم</span>');
     h+='<button class="card btnlike" data-act="copen" data-id="'+esc(c.uid)+'"><div class="row sp"><div class="row" style="gap:10px;align-items:center">'+avHtml(c,44)+'<div><b>'+esc(c.name||_('عميل'))+'</b>'+(c.phone?'<div class="ph" style="font-size:14px">'+esc(c.phone)+'</div>':'')+'</div></div>'+pill+_('</div><div class="muted num" style="margin-top:6px">أسبوع ')+(s.weekN||0)+' / '+(s.weekGoal||4)+_(' · سلسلة ')+(s.streak||0)+_(' · وزن ')+(s.weight||'—')+' · '+fmt(s.kcalAvg||0)+_(' سعر</div><div class="muted" style="font-size:12px;margin-top:2px">آخر مزامنة ')+(s.ts?esc(ago(s.ts)):'—')+'</div></button>';
@@ -1634,7 +1698,8 @@ document.addEventListener('click',function(ev){
    case 'tab':S.tab=d.v;S.sub=null;saveLocal();render();window.scrollTo(0,0);break;
    case 'sub':S.sub=d.v||null;saveLocal();render();window.scrollTo(0,0);break;
    case 'start':{const pr=PROGRAMS[S.profile.program]||PROGRAMS.ppl;const day=pr.days[+d.i];startWorkout(day.n,day.ex,pr.sets);break}
-   case 'startEmpty':startWorkout(_('تمرين حر'),[]);break;
+   case 'startEmpty':startWorkout(_('تمرين حر'),[]);S.active.pending=true;saveLocal();render();break;
+   case 'beginw':if(S.active&&S.active.pending){S.active.pending=false;S.active.start=Date.now();saveLocal();render();window.scrollTo(0,0);wake()}break;
    case 'repeat':{const l=S.workouts[S.workouts.length-1];if(l)startWorkout(l.name,l.exercises.map(e=>e.ex));break}
    case 'startroutine':{const r=S.routines.find(x=>x.id===d.id);if(r)startWorkout(r.name,r.ex);break}
    case 'newroutine':U.re={id:null,name:'',ex:[]};U.modal='routine';renderLayer();break;
@@ -1672,6 +1737,7 @@ document.addEventListener('click',function(ev){
    case 'delw':S.workouts=S.workouts.filter(w=>w.id!==d.id);save();render();break;
    case 'meal':U.meal=d.v;render();break;
    case 'offadd':{const f=(U.off||[])[+d.i];if(f){U.fs={food:f,g:100,qty:1,meal:U.meal};U.modal='food';renderLayer()}break}
+   case 'cfpick':{const f=(U.cfs||[])[+d.i];if(f){cfFill(f);const n=$('#cn');if(n)n.value=fName(f)}break}
    case 'foodsheet':{const f=findFood(d.n);if(f){U.fs={food:f,g:f.u==='ml'?250:100,qty:1,meal:U.meal};U.modal='food';renderLayer()}break}
    case 'fgset':U.fs.g=+d.v;renderLayer();break;
    case 'fcat':U.fcat=d.v;render();break;
@@ -1795,6 +1861,8 @@ document.addEventListener('input',function(ev){
   if(t.id==='cfsearch'){U.cc.fq=t.value;$('#cflist').innerHTML=cfList(t.value);return}
   if(t.id==='cfq'){U.cc.fqty=t.value;return}
   if(t.dataset.ek&&U.ew){U.ew.exercises[+t.dataset.ei].sets[+t.dataset.ej][t.dataset.ek]=t.value;return}
+  if(t.id==='cn'){cfSearch(t.value);return}
+  if(t.id==='ck'||t.id==='cp'||t.id==='cc'||t.id==='cf'){const k=$('#ck');if(k)k.dataset.auto='';return}
   if(t.id==='fsearch'){U.fq=t.value;$('#flist').innerHTML=foodList(t.value);offSearch(t.value);return}
   if(t.id==='fg'&&U.fs){U.fs.g=pf(t.value)||0;const c=$('#fcalc');if(c)c.innerHTML=foodCalcHtml();return}
   if(t.id==='em_g'&&U.em&&U.em.b){const g=pf(t.value)||0,r=g/100,b=U.em.b,r1=n=>Math.round(n*10)/10;$('#em_k').value=Math.round(b.k*r);$('#em_p').value=r1(b.p*r);$('#em_c').value=r1(b.c*r);$('#em_f').value=r1(b.f*r);return}
