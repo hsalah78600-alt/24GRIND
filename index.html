@@ -6,30 +6,30 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>if(window.top!==window.self){document.documentElement.style.display="none";try{window.top.location=window.self.location}catch(e){}}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#2748F0">
+<meta name="theme-color" content="#0B1018">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Hassanfit">
+<meta name="apple-mobile-web-app-title" content="Forma">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
-<title>Hassanfit</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Readex+Pro:wght@400;500;600;700&display=swap">
+<title>Forma</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700&family=Readex+Pro:wght@700&family=Kanit:ital,wght@1,900&display=swap">
 <style>
 /* Layout: one-column phone app, sticky header with sync status, content cards, fixed 6-tab bar, "المزيد" tab opens a grid of sections. */
 :root{
-  --bg:#EEF1F6; --surface:#FFFFFF; --surface2:#E3E8F1; --fg:#0D1424; --muted:#5B667D; --line:#D3DAE7;
-  --accent:#2748F0; --accent-fg:#FFFFFF; --flame:#E85F0C; --ok:#0F8F58; --danger:#C93A3A;
-  --display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
-  --body:"IBM Plex Sans Arabic","Readex Pro",system-ui,sans-serif;
+  --bg:#EDF1F6; --surface:#FFFFFF; --surface2:#E0E7F0; --fg:#0E1522; --muted:#56637A; --line:#CFD8E4;
+  --accent:#3F5068; --accent-fg:#FFFFFF; --flame:#0369A1; --ok:#0F8F58; --danger:#C93A3A;
+  --display:"Exo 2","Cairo",system-ui,sans-serif;
+  --body:"Exo 2","Cairo",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0A0E18; --surface:#131A2A; --surface2:#1C2539; --fg:#EAEFFA; --muted:#97A3BD; --line:#26324B;
-  --accent:#7C93FF; --accent-fg:#0A0E18; --flame:#FF8A3D; --ok:#3DD598; --danger:#FF7A7A; color-scheme:dark}}
+  --bg:#0B1018; --surface:#131A26; --surface2:#1C2536; --fg:#E6ECF5; --muted:#9AA7BD; --line:#2B364B;
+  --accent:#94A3B8; --accent-fg:#0B1220; --flame:#38BDF8; --ok:#3DD598; --danger:#FF7A7A; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0A0E18; --surface:#131A2A; --surface2:#1C2539; --fg:#EAEFFA; --muted:#97A3BD; --line:#26324B;
-  --accent:#7C93FF; --accent-fg:#0A0E18; --flame:#FF8A3D; --ok:#3DD598; --danger:#FF7A7A; color-scheme:dark}
+  --bg:#0B1018; --surface:#131A26; --surface2:#1C2536; --fg:#E6ECF5; --muted:#9AA7BD; --line:#2B364B;
+  --accent:#94A3B8; --accent-fg:#0B1220; --flame:#38BDF8; --ok:#3DD598; --danger:#FF7A7A; color-scheme:dark}
 *{box-sizing:border-box}
 html{padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 body{margin:0;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
@@ -39,8 +39,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 header.top{display:flex;align-items:center;justify-content:space-between;padding:18px 2px 10px;gap:10px}
-.logo{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:-.5px;direction:ltr}
-.logo b{color:var(--accent);font-weight:700}
+.logo{position:relative;display:inline-block;isolation:isolate;line-height:1.25;font-size:27px;padding:0 4px}
+.logo .la,.logo .le{display:inline-block;color:var(--fg)}
+.logo .la{font-family:"Readex Pro","Cairo",sans-serif;font-weight:700;transform:skewX(-10deg)}
+.logo .le{display:none;font-family:"Kanit","Exo 2",sans-serif;font-weight:900;font-style:italic;letter-spacing:.05em;direction:ltr}
+html[lang="en"] .logo .la{display:none}html[lang="en"] .logo .le{display:inline-block}
+.logo::after{content:"";position:absolute;left:-2px;right:32%;bottom:2px;height:.1em;background:var(--flame);z-index:-1;transform:skewX(-10deg)}
 .date{color:var(--muted);font-size:12px;text-align:end}
 .langbtn{background:var(--surface2);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;min-height:32px;min-width:44px}
 h2{font-family:var(--display);font-size:20px;margin:18px 2px 10px;font-weight:600;text-wrap:balance}
@@ -163,7 +167,7 @@ nav.tabs svg{width:22px;height:22px}
 </head>
 <body>
 <div id="app" dir="rtl" lang="ar">
-  <header class="top"><div class="logo">Hassan<b>fit</b></div><div><div class="date" id="today"></div><div class="sync" id="sync"></div></div><button class="langbtn" id="langbtn" type="button">EN</button></header>
+  <header class="top"><div class="logo" aria-label="Forma"><span class="la">فورما</span><span class="le">FORMA</span></div><div><div class="date" id="today"></div><div class="sync" id="sync"></div></div><button class="langbtn" id="langbtn" type="button">EN</button></header>
   <main id="main"></main>
   <nav class="tabs" id="nav"></nav>
   <div id="layer"></div>
@@ -386,7 +390,7 @@ async function runSync(){
     const sm=makeSummary();
     await CLOUD.setProfile(uid,{summary:sm,name:S.profile.name});
     if(C.profile)C.profile.summary=sm;
-    if(C.profile&&C.profile.coachId){const wk=sm.workouts;if(typeof S.pushWk==='number'&&wk>S.pushWk)pushNotify(C.profile.coachId,S.profile.name||'Hassanfit',_('خلّص تمرين')+(sm.lastWorkout&&sm.lastWorkout.name?': '+sm.lastWorkout.name:''),'wk');S.pushWk=wk}
+    if(C.profile&&C.profile.coachId){const wk=sm.workouts;if(typeof S.pushWk==='number'&&wk>S.pushWk)pushNotify(C.profile.coachId,S.profile.name||'Forma',_('خلّص تمرين')+(sm.lastWorkout&&sm.lastWorkout.name?': '+sm.lastWorkout.name:''),'wk');S.pushWk=wk}
     S.lastSync=Date.now();saveLocal();sync.st='ok';
   }catch(e){sync.st='err'}
   sync.busy=false;setSync();
@@ -670,7 +674,7 @@ function ntAlert(it){
   try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.05;o.start();o.stop(a.currentTime+.14)}catch(e){}
   try{if(document.hidden&&!pushOn()&&window.Notification&&Notification.permission==='granted'){
     const o={body:it.txt,icon:'icon-192.png',tag:it.id};
-    if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification('Hassanfit',o)).catch(()=>{});else new Notification('Hassanfit',o)}}catch(e){}
+    if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification('Forma',o)).catch(()=>{});else new Notification('Forma',o)}}catch(e){}
 }
 function ntPush(it){
   ntState();if(NT.items.some(x=>x.id===it.id))return;
@@ -844,7 +848,7 @@ function extendAccess(id,m){
   const a=findAcct(id);if(!a)return;
   const u=addMonths(Math.max(Date.now(),effUntil(a)),m);
   setAccess(id,{until:u,blocked:false},_('اتمدّد لحد ')+fmtD(u));
-  pushNotify(id,(C.profile&&C.profile.name)||'Hassanfit',_('اشتراكك اتمدّد لحد ')+fmtD(u),'sub');
+  pushNotify(id,(C.profile&&C.profile.name)||'Forma',_('اشتراكك اتمدّد لحد ')+fmtD(u),'sub');
 }
 function blockAccess(id){
   if(!confirm(_('متأكد إنك عايز توقف الحساب ده؟ بياناته هتفضل محفوظة وتقدر ترجّعه.')))return;
@@ -1380,8 +1384,8 @@ async function sendMsg(from,uid,media){
   const prev=txt||(media&&media.img?'📷':'🎤');
   try{
     await CLOUD.sendMessage(uid,msg);
-    if(from==='client'){CLOUD.setProfile(uid,{lastMsg:{from:'client',txt:prev.slice(0,120),ts:msg.ts}}).catch(()=>{});pushNotify((C.profile&&C.profile.coachId)||(C.adminInfo&&C.adminInfo.uid),S.profile.name||'Hassanfit',prev.slice(0,100),'msg')}
-    else pushNotify(uid,(C.profile&&C.profile.name)||'Hassanfit',prev.slice(0,100),'msg');
+    if(from==='client'){CLOUD.setProfile(uid,{lastMsg:{from:'client',txt:prev.slice(0,120),ts:msg.ts}}).catch(()=>{});pushNotify((C.profile&&C.profile.coachId)||(C.adminInfo&&C.adminInfo.uid),S.profile.name||'Forma',prev.slice(0,100),'msg')}
+    else pushNotify(uid,(C.profile&&C.profile.name)||'Forma',prev.slice(0,100),'msg');
   }catch(e){toast(_('تعذر إرسال الرسالة'))}
 }
 function installApp(){const p=U.deferred;if(!p)return;p.prompt();p.userChoice&&p.userChoice.then(()=>{U.deferred=null;render()})}
@@ -1530,7 +1534,7 @@ async function saveClientPlan(){
 function vMyCode(){
   const code=(C.profile&&C.profile.code)||'—';
   const link=location.origin+location.pathname.replace(/index\.html$/,'');
-  const msg=_('حمّل تطبيق Hassanfit من الرابط ده: ')+link+_('\nوبعد ما تسجّل اكتب كود الدعوة: ')+code;
+  const msg=_('حمّل تطبيق Forma من الرابط ده: ')+link+_('\nوبعد ما تسجّل اكتب كود الدعوة: ')+code;
   return _('<h2>كودك</h2><div class="card"><div class="muted" style="text-align:center">كود الدعوة</div><div class="code">')+esc(code)+'</div><div class="muted" style="margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere" id="invtxt">'+esc(msg)+_('</div><button class="btn block" data-act="copyinv">انسخ رسالة الدعوة</button></div><div class="card muted">العميل بيسجّل حساب ويكتب الكود مرة واحدة، وبعدها تمارينه وأكله بيظهروا لك في تبويب العملاء.</div>');
 }
 function vCoachAcct(){
@@ -1993,7 +1997,7 @@ $('#impf').addEventListener('change',function(ev){
   const f=ev.target.files[0];ev.target.value='';if(!f)return;
   const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);if(!o||!o.profile||!Array.isArray(o.workouts))throw 0;
-    const d=defState();S=Object.assign(d,o);S.profile=Object.assign(d.profile,o.profile);S.wu=o.wu||'cups';if(S.wu!=='ml'&&!(o.profile&&+o.profile.waterGoal>0))S.profile.waterGoal=8;migWater(S);S.settings=Object.assign({theme:'auto'},o.settings||{});S.active=null;S.tab='more';S.sub='set';S.updated=Date.now();U.confirmImport=false;applyTheme();save();render();toast(_('اتستورد الملف'))}catch(e){toast(_('الملف مش نسخة Hassanfit صحيحة'))}};
+    const d=defState();S=Object.assign(d,o);S.profile=Object.assign(d.profile,o.profile);S.wu=o.wu||'cups';if(S.wu!=='ml'&&!(o.profile&&+o.profile.waterGoal>0))S.profile.waterGoal=8;migWater(S);S.settings=Object.assign({theme:'auto'},o.settings||{});S.active=null;S.tab='more';S.sub='set';S.updated=Date.now();U.confirmImport=false;applyTheme();save();render();toast(_('اتستورد الملف'))}catch(e){toast(_('الملف مش نسخة Forma صحيحة'))}};
   r.readAsText(f);
 });
 
