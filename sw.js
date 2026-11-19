@@ -1,7 +1,7 @@
 /* Hassanfit service worker: يخلّي التطبيق يفتح بدون إنترنت، ويجيب النسخة الجديدة لما يكون في نت. */
-const CACHE = 'hassanfit-v18';
+const CACHE = 'hassanfit-v19';
 const SHELL = ['./', 'index.html', 'cloud.js', 'firebase-config.js', 'push-config.js', 'manifest.webmanifest', 'foods.js', 'lang-en.js', 'exercises.js',
-  'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+  'forma-192.png', 'forma-512.png', 'forma-touch.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).catch(() => {})).then(() => self.skipWaiting()));
@@ -54,7 +54,7 @@ self.addEventListener('push', e => {
     const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     if (cs.some(c => c.visibilityState === 'visible')) return; /* التطبيق قدامه: الإشعار جوه التطبيق كفاية */
     await self.registration.showNotification(d.title || 'Hassanfit', {
-      body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png',
+      body: d.body || '', icon: 'forma-192.png', badge: 'forma-192.png',
       tag: d.tag || 'hf', renotify: true, data: { url: d.url || './' }
     });
   })());

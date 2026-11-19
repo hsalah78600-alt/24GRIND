@@ -10,11 +10,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Forma">
+<meta name="apple-mobile-web-app-title" content="FORMA">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon-192.png">
-<title>Forma</title>
+<link rel="apple-touch-icon" href="forma-touch.png">
+<link rel="icon" href="forma-192.png">
+<title>FORMA</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700&family=Readex+Pro:wght@700&family=Kanit:ital,wght@1,900&display=swap">
 <style>
 /* Layout: one-column phone app, sticky header with sync status, content cards, fixed 6-tab bar, "المزيد" tab opens a grid of sections. */
@@ -673,7 +673,7 @@ function ntAlert(it){
   try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
   try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.05;o.start();o.stop(a.currentTime+.14)}catch(e){}
   try{if(document.hidden&&!pushOn()&&window.Notification&&Notification.permission==='granted'){
-    const o={body:it.txt,icon:'icon-192.png',tag:it.id};
+    const o={body:it.txt,icon:'forma-192.png',tag:it.id};
     if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification('Forma',o)).catch(()=>{});else new Notification('Forma',o)}}catch(e){}
 }
 function ntPush(it){
