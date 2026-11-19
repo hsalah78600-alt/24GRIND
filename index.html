@@ -1239,7 +1239,10 @@ function cfOff(q){
   },650);
 }
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='cu')cfPrev()});
-(function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{recUi()}catch(e){}return x}})();
+function authUi(){const e=document.getElementById('a_email'),p=document.getElementById('a_pw');
+  [e,p].forEach(i=>{if(i){i.setAttribute('autocapitalize','none');i.setAttribute('autocorrect','off');i.setAttribute('spellcheck','false')}});
+  if(p&&!document.querySelector('[data-act="pwshow"]')){const b=document.createElement('button');b.type='button';b.className='linkbtn';b.setAttribute('data-act','pwshow');b.textContent=_('إظهار الباسورد');p.insertAdjacentElement('afterend',b)}}
+(function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{recUi()}catch(e){}try{authUi()}catch(e){}return x}})();
 function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];closeClient()}
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
 function msgsHtml(list,me){
@@ -1910,6 +1913,7 @@ document.addEventListener('click',function(ev){
    case 'srole':U.signRole=d.v;render();break;
    case 'authgo':doAuth();break;
    case 'authreset':resetPw();break;
+   case 'pwshow':{const pw=$('#a_pw');if(pw){const sh=pw.type==='password';pw.type=sh?'text':'password';const b=document.querySelector('[data-act="pwshow"]');if(b)b.textContent=sh?_('إخفاء الباسورد'):_('إظهار الباسورد')}break}
    case 'signout':signOutNow();break;
    case 'join':joinCoach();break;
    case 'unlink':unlinkCoach();break;
