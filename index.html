@@ -157,6 +157,7 @@ nav.tabs svg{width:22px;height:22px}
 .bub{padding:10px 12px;border-radius:12px;max-width:88%;white-space:pre-wrap;overflow-wrap:anywhere}
 .bub.u{background:var(--accent);color:var(--accent-fg);align-self:flex-start}
 .bub.a{background:var(--surface2);align-self:flex-end}
+.newdiv{align-self:stretch;text-align:center;font-size:12px;font-weight:600;color:var(--accent);border-top:1px solid var(--accent);padding-top:4px;margin:6px 0}
 .big{font-family:var(--display);font-size:44px;font-weight:700;text-align:center;direction:ltr;font-variant-numeric:tabular-nums}
 .sync{font-size:11px;color:var(--muted)}
 .sync.ok{color:var(--ok)}
@@ -1085,7 +1086,7 @@ function openAdminChat(id){
   if(U.unA){try{U.unA()}catch(e){}U.unA=null}
   CLOUD.watchMessages(id,m=>{
     if(U.modal!=='achat'||U.ach!==id){if(U.unA){U.unA();U.unA=null}return}
-    U.amsgs=m;const el=$('#amsgs');if(el){el.innerHTML=msgsHtml(m,'admin');el.scrollTop=el.scrollHeight}
+    U.amsgs=m;chatSet($('#amsgs'),m,'admin')
   }).then(u=>{U.unA=u}).catch(()=>{});
 }
 document.addEventListener('change',async function(ev){
@@ -1239,17 +1240,79 @@ function cfOff(q){
   },650);
 }
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='cu')cfPrev()});
+
+/* ---- chat: open at first unread message, remember last read per thread ---- */
+function chatInfo(el){const uid=C.user&&C.user.uid;
+  if(el.id==='msgs')return {th:uid,me:'client'};
+  if(el.id==='cmsgs')return {th:U.cc&&U.cc.sel&&U.cc.sel.uid,me:'coach'};
+  if(el.id==='amsgs')return {th:U.ach,me:'admin'};
+  return null}
+function rdKey(th){return 'forma.rd.'+((C.user&&C.user.uid)||'x')+'.'+th}
+function rdGet(th,bs,me){let v=null;try{v=localStorage.getItem(rdKey(th))}catch(e){}
+  if(v!==null)return +v||0;
+  let m=0;bs.forEach(b=>{if(b.dataset.f===me){const t=+b.dataset.ts||0;if(t>m)m=t}});return m}
+function chatRead(el){
+  if(!el||!el.isConnected||document.visibilityState!=='visible')return;
+  const I=chatInfo(el);if(!I||!I.th)return;
+  const r=el.getBoundingClientRect();if(r.height<20||r.bottom<0||r.bottom>innerHeight+8)return;
+  if(el.scrollHeight-el.scrollTop-el.clientHeight>30)return;
+  const bs=el.querySelectorAll('.bub');if(!bs.length)return;
+  const t=+bs[bs.length-1].dataset.ts||0;
+  try{if(t>(+localStorage.getItem(rdKey(I.th))||0))localStorage.setItem(rdKey(I.th),String(t))}catch(e){}
+}
+function chatPos(el,mode){
+  const I=chatInfo(el);if(!I||!I.th)return;
+  const bs=[].slice.call(el.querySelectorAll('.bub'));
+  const old=el.querySelector('.newdiv');if(old)old.remove();
+  if(!bs.length)return;
+  const lr=rdGet(I.th,bs,I.me);
+  const first=bs.find(b=>b.dataset.f!==I.me&&(+b.dataset.ts||0)>lr);
+  let mark=null;
+  if(first){mark=document.createElement('div');mark.className='newdiv';mark.textContent=_('رسايل جديدة');first.parentNode.insertBefore(mark,first)}
+  if(mode==='unread'&&mark)el.scrollTop+=mark.getBoundingClientRect().top-el.getBoundingClientRect().top-6;
+  else if(mode)el.scrollTop=el.scrollHeight;
+  el.dataset.fx='1';
+  if(!el.dataset.l){el.dataset.l='1';el.addEventListener('scroll',()=>chatRead(el),{passive:true})}
+  setTimeout(()=>chatRead(el),350)
+}
+function chatSet(el,list,me){if(!el)return;const first=!el.dataset.fx,nb=el.scrollHeight-el.scrollTop-el.clientHeight<80;
+  el.innerHTML=msgsHtml(list,me);chatPos(el,first?'unread':(nb?'bottom':false))}
+function chatAll(){['msgs','cmsgs','amsgs'].forEach(id=>{const el=document.getElementById(id);if(el)el.dataset.fx?chatRead(el):chatPos(el,'unread')})}
+window.addEventListener('scroll',()=>{['msgs','cmsgs','amsgs'].forEach(id=>chatRead(document.getElementById(id)))},{passive:true});
+document.addEventListener('visibilitychange',()=>{['msgs','cmsgs','amsgs'].forEach(id=>chatRead(document.getElementById(id)))});
+/* ---- password reset screen + change-password button ---- */
+function resetHtml(){
+  let h='<h2>'+_('مدربي')+'</h2><div class="card"><h3>'+_('نسيت الباسورد؟')+'</h3><p class="muted">'+_('اكتب إيميلك وهنبعتلك لينك تغيّر منه الباسورد.')+'</p>';
+  h+='<label class="f" for="a_email">'+_('الإيميل')+'</label><input id="a_email" type="email" autocomplete="email" inputmode="email" value="'+esc(U.resetEmail||'')+'" style="direction:ltr">';
+  if(U.resetMsg)h+='<div style="margin-top:12px;color:var(--ok)">'+esc(U.resetMsg)+'</div>';
+  if(U.authErr)h+='<div style="color:var(--danger);margin-top:10px">'+esc(U.authErr)+'</div>';
+  h+='<button class="btn block" style="margin-top:14px" data-act="resetsend"'+(U.authBusy?' disabled':'')+'>'+_('ابعتلي لينك تغيير الباسورد')+'</button>';
+  h+='<button class="linkbtn" data-act="authmode" data-v="in">'+_('رجوع لتسجيل الدخول')+'</button></div>';
+  return h}
+async function doReset(){
+  if(U.authBusy)return;
+  const email=($('#a_email').value||'').trim();U.resetEmail=email;
+  if(!email){U.authErr=_('اكتب إيميلك الأول');U.resetMsg='';render();return}
+  U.authBusy=true;U.authErr='';U.resetMsg='';render();
+  try{await CLOUD.reset(email);U.resetMsg=_('بعتنالك لينك على إيميلك لو الإيميل مسجل. افتح الإيميل (وشوف Spam كمان) واضغط اللينك واكتب باسورد جديد، وبعدين ارجع ادخل بيه.')}
+  catch(e){U.authErr=AUTHERR[e&&e.code]||_('تعذر الإرسال')}
+  U.authBusy=false;render()}
+(function(){const v0=vAuth;vAuth=function(){return U.authMode==='reset'?resetHtml():v0.apply(this,arguments)}})();
+function pwUi(){document.querySelectorAll('[data-act="signout"]').forEach(b=>{if(b.previousElementSibling&&b.previousElementSibling.dataset&&b.previousElementSibling.dataset.act==='pwchange')return;
+  const n=document.createElement('button');n.className='btn line block';n.style.marginBottom='10px';n.dataset.act='pwchange';n.textContent=_('تغيير الباسورد');b.parentNode.insertBefore(n,b)})}
 function authUi(){const e=document.getElementById('a_email'),p=document.getElementById('a_pw');
   [e,p].forEach(i=>{if(i){i.setAttribute('autocapitalize','none');i.setAttribute('autocorrect','off');i.setAttribute('spellcheck','false')}});
   if(p&&!document.querySelector('[data-act="pwshow"]')){const b=document.createElement('button');b.type='button';b.className='linkbtn';b.setAttribute('data-act','pwshow');b.textContent=_('إظهار الباسورد');p.insertAdjacentElement('afterend',b)}}
-(function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{recUi()}catch(e){}try{authUi()}catch(e){}return x}})();
+(function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{recUi()}catch(e){}try{authUi()}catch(e){}try{pwUi()}catch(e){}try{chatAll()}catch(e){}return x}})();
+(function(){const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{pwUi();chatAll()}catch(e){}return x}})();
+(function(){const a=renderLayer;renderLayer=function(){const x=a.apply(this,arguments);try{chatAll()}catch(e){}return x}})();
 function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];closeClient()}
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
 function msgsHtml(list,me){
   if(!list.length)return _('<div class="muted">لسه مفيش رسايل.</div>');
-  return list.map(m=>'<div class="bub '+(m.from===me?'u':'a')+'">'+(safeImg(m.img)?'<img class="mimg" alt="" src="'+m.img+'">':'')+(safeAud(m.aud)?'<audio controls preload="none" src="'+m.aud+'"></audio>':'')+(m.txt?esc(m.txt):'')+'<div style="font-size:11px;opacity:.7;margin-top:4px">'+esc(ago(m.ts))+'</div></div>').join('');
+  return list.map(m=>'<div class="bub '+(m.from===me?'u':'a')+'" data-f="'+esc(m.from||'')+'" data-ts="'+(+m.ts||0)+'">'+(safeImg(m.img)?'<img class="mimg" alt="" src="'+m.img+'">':'')+(safeAud(m.aud)?'<audio controls preload="none" src="'+m.aud+'"></audio>':'')+(m.txt?esc(m.txt):'')+'<div style="font-size:11px;opacity:.7;margin-top:4px">'+esc(ago(m.ts))+'</div></div>').join('');
 }
-function updateMsgs(){const el=$('#msgs');if(el){el.innerHTML=msgsHtml(C.msgs,'client');el.scrollTop=el.scrollHeight}}
+function updateMsgs(){chatSet($('#msgs'),C.msgs,'client')}
 
 function homeNotice(){
   let h='';
@@ -1435,7 +1498,7 @@ async function openClient(id){
   try{const [docs,plan]=await Promise.all([CLOUD.readChunks(id),CLOUD.getPlan(id).catch(()=>null)]);const T=defState();const ok=applyChunksTo(T,docs);U.cc.detail={T,ok,plan}}
   catch(e){U.cc.detail={err:true}}
   if(U.cc.sel&&U.cc.sel.uid===id)renderCoachApp();
-  CLOUD.watchMessages(id,m=>{U.cc.msgs=m;const el=$('#cmsgs');if(el){el.innerHTML=msgsHtml(m,'coach');el.scrollTop=el.scrollHeight}}).then(u=>{U.cc.unMsg=u}).catch(()=>{});
+  CLOUD.watchMessages(id,m=>{U.cc.msgs=m;chatSet($('#cmsgs'),m,'coach')}).then(u=>{U.cc.unMsg=u}).catch(()=>{});
 }
 function vClientDetail(){
   const c=U.cc.sel,d=U.cc.detail;
@@ -1912,7 +1975,9 @@ document.addEventListener('click',function(ev){
    case 'authmode':U.authMode=d.v;U.authErr='';render();break;
    case 'srole':U.signRole=d.v;render();break;
    case 'authgo':doAuth();break;
-   case 'authreset':resetPw();break;
+   case 'authreset':U.authMode='reset';U.authErr='';U.resetMsg='';render();break;
+   case 'resetsend':doReset();break;
+   case 'pwchange':{CLOUD.reset((C.user&&C.user.email)||'').then(()=>toast(_('بعتنالك لينك تغيير الباسورد على إيميلك'))).catch(()=>toast(_('تعذر الإرسال')));break}
    case 'pwshow':{const pw=$('#a_pw');if(pw){const sh=pw.type==='password';pw.type=sh?'text':'password';const b=document.querySelector('[data-act="pwshow"]');if(b)b.textContent=sh?_('إخفاء الباسورد'):_('إظهار الباسورد')}break}
    case 'signout':signOutNow();break;
    case 'join':joinCoach();break;
