@@ -6,7 +6,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>if(window.top!==window.self){document.documentElement.style.display="none";try{window.top.location=window.self.location}catch(e){}}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0B1018">
+<meta name="theme-color" content="#EEF2F7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0B1018" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -19,8 +19,8 @@
 <style>
 /* Layout: one-column phone app, sticky header with sync status, content cards, fixed 6-tab bar, "المزيد" tab opens a grid of sections. */
 :root{
-  --bg:#EDF1F6; --surface:#FFFFFF; --surface2:#E0E7F0; --fg:#0E1522; --muted:#56637A; --line:#CFD8E4;
-  --accent:#3F5068; --accent-fg:#FFFFFF; --flame:#0369A1; --ok:#0F8F58; --danger:#C93A3A;
+  --bg:#EEF2F7; --surface:#FFFFFF; --surface2:#E2E8F0; --fg:#1E293B; --muted:#5B6B82; --line:#CBD5E1;
+  --accent:#1E293B; --accent-fg:#FFFFFF; --flame:#0284C7; --ok:#0F8F58; --danger:#C93A3A;
   --display:"Exo 2","Cairo",system-ui,sans-serif;
   --body:"Exo 2","Cairo",system-ui,sans-serif;
 }
@@ -44,7 +44,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;padding
 .logo .la{font-family:"Readex Pro","Cairo",sans-serif;font-weight:700;transform:skewX(-10deg)}
 .logo .le{display:none;font-family:"Kanit","Exo 2",sans-serif;font-weight:900;font-style:italic;letter-spacing:.05em;direction:ltr}
 html[lang="en"] .logo .la{display:none}html[lang="en"] .logo .le{display:inline-block}
-.logo::after{content:"";position:absolute;left:-2px;right:32%;bottom:2px;height:.1em;background:var(--flame);z-index:-1;transform:skewX(-10deg)}
+.logo .lmk{height:30px;width:auto;vertical-align:middle;margin-inline-end:8px;overflow:visible;filter:drop-shadow(0 0 5px var(--flame))}
 .date{color:var(--muted);font-size:12px;text-align:end}
 .langbtn{background:var(--surface2);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;min-height:32px;min-width:44px}
 h2{font-family:var(--display);font-size:20px;margin:18px 2px 10px;font-weight:600;text-wrap:balance}
@@ -168,7 +168,7 @@ nav.tabs svg{width:22px;height:22px}
 </head>
 <body>
 <div id="app" dir="rtl" lang="ar">
-  <header class="top"><div class="logo" aria-label="Forma"><span class="la">فورما</span><span class="le">FORMA</span></div><div><div class="date" id="today"></div><div class="sync" id="sync"></div></div><button class="langbtn" id="langbtn" type="button">EN</button></header>
+  <header class="top"><div class="logo" aria-label="Forma"><svg class="lmk" viewBox="-16 6 122 98" aria-hidden="true"><g transform="translate(-2 0)"><polygon points="26.4 12.0 98.4 12.0 97.2 17.3 25.2 17.3" fill="var(--fg)" opacity="1"/><rect x="5.7" y="13.4" width="12" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="24.7 19.3 96.7 19.3 95.6 24.7 23.6 24.7" fill="var(--fg)" opacity="1"/><rect x="-2.8" y="20.8" width="19" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="23.1 26.7 95.1 26.7 94.0 32.0 22.0 32.0" fill="var(--fg)" opacity="1"/><rect x="-11.4" y="28.1" width="26" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="21.5 34.0 47.5 34.0 46.6 38.0 20.6 38.0" fill="var(--fg)" opacity="1"/><polygon points="20.2 40.0 46.2 40.0 45.3 44.0 19.3 44.0" fill="var(--fg)" opacity="1"/><polygon points="18.9 46.0 78.9 46.0 77.3 53.0 17.3 53.0" fill="var(--fg)" opacity="1"/><polygon points="16.9 55.0 76.9 55.0 75.4 62.0 15.4 62.0" fill="var(--fg)" opacity="1"/><polygon points="14.9 64.0 40.9 64.0 40.0 68.0 14.0 68.0" fill="var(--fg)" opacity="1"/><polygon points="13.6 70.0 39.6 70.0 38.7 74.0 12.7 74.0" fill="var(--fg)" opacity="1"/><polygon points="12.3 76.0 38.3 76.0 37.4 80.0 11.4 80.0" fill="var(--fg)" opacity="1"/><polygon points="11.0 82.0 37.0 82.0 36.1 86.0 10.1 86.0" fill="var(--fg)" opacity="1"/></g><path d="M10 98Q60 100 102 80Q64 93 10 98Z" fill="var(--flame)"/></svg><span class="la">فورما</span><span class="le">FORMA</span></div><div><div class="date" id="today"></div><div class="sync" id="sync"></div></div><button class="langbtn" id="langbtn" type="button">EN</button></header>
   <main id="main"></main>
   <nav class="tabs" id="nav"></nav>
   <div id="layer"></div>
