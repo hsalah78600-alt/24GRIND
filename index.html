@@ -168,7 +168,7 @@ nav.tabs svg{width:22px;height:22px}
 </head>
 <body>
 <div id="app" dir="rtl" lang="ar">
-  <header class="top"><div class="logo" aria-label="Forma"><svg class="lmk" viewBox="-16 6 122 98" aria-hidden="true"><g transform="translate(-2 0)"><polygon points="26.4 12.0 98.4 12.0 97.2 17.3 25.2 17.3" fill="var(--fg)" opacity="1"/><rect x="5.7" y="13.4" width="12" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="24.7 19.3 96.7 19.3 95.6 24.7 23.6 24.7" fill="var(--fg)" opacity="1"/><rect x="-2.8" y="20.8" width="19" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="23.1 26.7 95.1 26.7 94.0 32.0 22.0 32.0" fill="var(--fg)" opacity="1"/><rect x="-11.4" y="28.1" width="26" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="21.5 34.0 47.5 34.0 46.6 38.0 20.6 38.0" fill="var(--fg)" opacity="1"/><polygon points="20.2 40.0 46.2 40.0 45.3 44.0 19.3 44.0" fill="var(--fg)" opacity="1"/><polygon points="18.9 46.0 78.9 46.0 77.3 53.0 17.3 53.0" fill="var(--fg)" opacity="1"/><polygon points="16.9 55.0 76.9 55.0 75.4 62.0 15.4 62.0" fill="var(--fg)" opacity="1"/><polygon points="14.9 64.0 40.9 64.0 40.0 68.0 14.0 68.0" fill="var(--fg)" opacity="1"/><polygon points="13.6 70.0 39.6 70.0 38.7 74.0 12.7 74.0" fill="var(--fg)" opacity="1"/><polygon points="12.3 76.0 38.3 76.0 37.4 80.0 11.4 80.0" fill="var(--fg)" opacity="1"/><polygon points="11.0 82.0 37.0 82.0 36.1 86.0 10.1 86.0" fill="var(--fg)" opacity="1"/></g><path d="M10 98Q60 100 102 80Q64 93 10 98Z" fill="var(--flame)"/></svg><span class="la">فورما</span><span class="le">FORMA</span></div><div><div class="date" id="today"></div><div class="sync" id="sync"></div></div><button class="langbtn" id="langbtn" type="button">EN</button></header>
+  <header class="top"><div class="logo" aria-label="Forma"><svg class="lmk" viewBox="-16 6 122 98" aria-hidden="true"><g transform="translate(-2 0)"><polygon points="26.4 12.0 98.4 12.0 97.2 17.3 25.2 17.3" fill="var(--accent)" opacity="1"/><rect x="5.7" y="13.4" width="12" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="24.7 19.3 96.7 19.3 95.6 24.7 23.6 24.7" fill="var(--accent)" opacity="1"/><rect x="-2.8" y="20.8" width="19" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="23.1 26.7 95.1 26.7 94.0 32.0 22.0 32.0" fill="var(--accent)" opacity="1"/><rect x="-11.4" y="28.1" width="26" height="2.4" rx="1.2" fill="var(--flame)" opacity=".55"/><polygon points="21.5 34.0 47.5 34.0 46.6 38.0 20.6 38.0" fill="var(--accent)" opacity="1"/><polygon points="20.2 40.0 46.2 40.0 45.3 44.0 19.3 44.0" fill="var(--accent)" opacity="1"/><polygon points="18.9 46.0 78.9 46.0 77.3 53.0 17.3 53.0" fill="var(--accent)" opacity="1"/><polygon points="16.9 55.0 76.9 55.0 75.4 62.0 15.4 62.0" fill="var(--accent)" opacity="1"/><polygon points="14.9 64.0 40.9 64.0 40.0 68.0 14.0 68.0" fill="var(--accent)" opacity="1"/><polygon points="13.6 70.0 39.6 70.0 38.7 74.0 12.7 74.0" fill="var(--accent)" opacity="1"/><polygon points="12.3 76.0 38.3 76.0 37.4 80.0 11.4 80.0" fill="var(--accent)" opacity="1"/><polygon points="11.0 82.0 37.0 82.0 36.1 86.0 10.1 86.0" fill="var(--accent)" opacity="1"/></g><path d="M10 98Q60 100 102 80Q64 93 10 98Z" fill="var(--flame)"/></svg><span class="la">فورما</span><span class="le">FORMA</span></div><div><div class="date" id="today"></div><div class="sync" id="sync"></div></div><button class="langbtn" id="langbtn" type="button">EN</button></header>
   <main id="main"></main>
   <nav class="tabs" id="nav"></nav>
   <div id="layer"></div>
@@ -1416,6 +1416,70 @@ function authUi(){const e=document.getElementById('a_email'),p=document.getEleme
 (function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{recUi()}catch(e){}try{authUi()}catch(e){}try{pwUi()}catch(e){}try{chatAll()}catch(e){}return x}})();
 (function(){const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{pwUi();chatAll();cmUi()}catch(e){}return x}})();
 (function(){const a=renderLayer;renderLayer=function(){const x=a.apply(this,arguments);try{chatAll()}catch(e){}return x}})();
+/* ----- AI assistant (Workers AI via the push worker /ai) ----- */
+const AIQ=[_('اشرحلي تمرين النهاردة'),_('بدّل الرز بأكل بنفس الماكروز'),_('أنا ماشي كويس في هدفي؟'),_('آكل إيه قبل التمرين؟')];
+const aiKey=()=>'forma_ai_'+((C.user&&(C.user.uid||C.user.email))||'x');
+function aiSt(){if(!U.ai){let m=[];try{const j=JSON.parse(localStorage.getItem(aiKey())||'[]');if(Array.isArray(j))m=j.slice(-30)}catch(e){}U.ai={msgs:m,busy:false}}return U.ai}
+function aiSave(){try{localStorage.setItem(aiKey(),JSON.stringify(aiSt().msgs.filter(m=>!m.e).slice(-30)))}catch(e){}}
+function aiCtx(){
+  const p=S.profile,t=targets(),k=dkey(),ms=dayMeals(k),L=[];
+  const tot=ms.reduce((a,m)=>({k:a.k+(+m.k||0),p:a.p+(+m.p||0),c:a.c+(+m.c||0),f:a.f+(+m.f||0)}),{k:0,p:0,c:0,f:0});
+  const nd=nextDay(),d=nd.pr.days[nd.i];
+  L.push('Name: '+p.name+'; sex: '+(p.sex==='f'?'female':'male')+'; age: '+p.age+'; height cm: '+p.height+'; weight kg: '+p.weight+(p.targetWeight?'; target weight kg: '+p.targetWeight:''));
+  L.push('Goal: '+({cut:'fat loss',maintain:'maintenance',bulk:'muscle gain'}[p.goal]||p.goal));
+  L.push('Daily targets: '+t.kcal+' kcal, protein '+t.p+' g, carbs '+t.c+' g, fat '+t.f+' g'+(t.coach?' (set by the coach)':''));
+  L.push('Eaten today so far: '+Math.round(tot.k)+' kcal, protein '+Math.round(tot.p)+' g, carbs '+Math.round(tot.c)+' g, fat '+Math.round(tot.f)+' g');
+  if(ms.length)L.push('Today meals: '+ms.slice(0,12).map(m=>m.name+' ('+Math.round(m.k||0)+' kcal)').join('; '));
+  L.push('Next workout: '+nd.pr.n+' / '+d.n+': '+d.ex.map(exName).join(', '));
+  L.push('Workouts+cardio this week: '+weekStats().n+' (weekly goal '+(+p.weekGoal||4)+')');
+  if(S.weights.length)L.push('Recent weights (kg): '+S.weights.slice(-6).map(w=>w.date+' '+w.kg).join(', '));
+  const pl=activePlan();
+  if(pl&&pl.meals&&pl.meals.length)L.push('Coach meal plan: '+pl.meals.slice(0,14).map(x=>x.meal+': '+x.name+(+x.g>0?' '+x.g+' g':'')).join('; '));
+  if(pl&&pl.note)L.push('Coach note: '+String(pl.note).slice(0,300));
+  return L.join('\n').slice(0,2400);
+}
+function aiMsgsHtml(){const A=aiSt();
+  let h=A.msgs.map(m=>'<div class="aib '+(m.r==='u'?'u':'a')+'">'+esc(m.t)+'</div>').join('');
+  if(A.busy)h+='<div class="aib a" aria-live="polite">…</div>';
+  return h}
+function aiRender(){const A=aiSt(),b=$('#aimsgs');if(!b)return;
+  b.innerHTML=aiMsgsHtml();
+  const q=$('#aiq');if(q)q.hidden=A.msgs.length>0;
+  const s=$('#aisend');if(s)s.disabled=!!A.busy;
+  const last=b.lastElementChild;if(last&&last.scrollIntoView)last.scrollIntoView({block:'end'})}
+function vAi(){
+  if(!C.user)return '<div class="card muted">'+_('سجّل دخول بحسابك عشان تستخدم المساعد الذكي.')+'</div>';
+  const A=aiSt();
+  return '<div class="card muted" style="font-size:.92em">'+_('مساعد ذكي بيجاوب على أسئلة التمرين والأكل بناءً على بياناتك. مش بديل عن مدربك ولا عن الدكتور.')+'</div>'+
+   '<div id="aimsgs" class="aimsgs">'+aiMsgsHtml()+'</div>'+
+   '<div class="chips" id="aiq"'+(A.msgs.length?' hidden':'')+'>'+AIQ.map((q,i)=>'<button class="chip" data-act="aiq" data-i="'+i+'">'+esc(q)+'</button>').join('')+'</div>'+
+   '<div class="row aibar"><textarea id="aiin" rows="1" maxlength="500" placeholder="'+_('اكتب سؤالك هنا')+'" aria-label="'+_('اكتب سؤالك هنا')+'"></textarea><button class="btn" id="aisend" data-act="aisend"'+(A.busy?' disabled':'')+'>'+_('إرسال')+'</button></div>'+
+   (A.msgs.length?'<button class="linkbtn" data-act="aiclear" style="margin-top:10px">'+_('مسح المحادثة')+'</button>':'')+
+   '<style>.aimsgs{display:flex;flex-direction:column;gap:8px;margin:10px 0}.aib{max-width:88%;padding:10px 12px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}.aib.u{align-self:flex-end;background:var(--accent);color:var(--accent-fg)}.aib.a{align-self:flex-start;background:var(--surface);border:1px solid var(--line)}.aibar{align-items:flex-end;gap:8px;margin-top:8px}#aiq[hidden]{display:none}html[dir=rtl] .aib.u{align-self:flex-start}html[dir=rtl] .aib.a{align-self:flex-end}.aibar textarea{flex:1;resize:none;min-height:44px;max-height:120px;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg)}</style>';
+}
+async function aiSend(txt){
+  const A=aiSt();txt=String(txt||'').trim().slice(0,500);if(!txt||A.busy)return;
+  const inp=$('#aiin');if(inp)inp.value='';
+  A.msgs.push({r:'u',t:txt});A.busy=true;aiRender();
+  let out='',err=false;
+  try{
+    const tok=await CLOUD.idToken();
+    if(!tok||!PUSHCFG.url){out=_('المساعد لسه مش متفعّل.');err=true}
+    else{
+      const body=JSON.stringify({ctx:aiCtx(),lang:LANG,msgs:A.msgs.filter(m=>!m.e).slice(-10).map(m=>({role:m.r==='u'?'user':'assistant',content:m.t}))});
+      const r=await fetch(PUSHCFG.url.replace(/\/$/,'')+'/ai',{method:'POST',headers:{Authorization:'Bearer '+tok,'content-type':'application/json'},body});
+      const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.reply)out=j.reply;
+      else{err=true;out=j.error==='quota'?_('المساعد وصل للحد اليومي المجاني النهارده. جرب تاني بكرة.'):j.error==='user-limit'?_('وصلت للحد اليومي بتاعك من الرسايل. كمّل بكرة.'):r.status===503?_('المساعد لسه مش متفعّل.'):_('حصلت مشكلة، جرب تاني.')}
+    }
+  }catch(e){err=true;out=_('مفيش اتصال دلوقتي، جرب تاني.')}
+  A.busy=false;A.msgs.push({r:'a',t:out,e:err?1:0});aiSave();
+  if(S.tab==='more'&&S.sub==='ai'&&$('#aimsgs'))aiRender();
+}
+document.addEventListener('keydown',e=>{const t=e.target;if(t&&t.id==='aiin'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();aiSend(t.value)}});
+(function(){const a=vHome;vHome=function(){const x=a.apply(this,arguments);
+  if(!C.user||!PUSHCFG.url)return x;
+  return x+'<div class="card"><div class="row sp"><div class="grow"><h3 style="margin:0">'+_('المساعد الذكي')+'</h3><div class="muted">'+_('اسأل عن تمرينك وأكلك')+'</div></div><button class="btn alt sm" data-act="aiopen">'+_('اسأل')+'</button></div></div>'}})();
 function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];closeClient()}
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
 function msgsHtml(list,me){
@@ -1720,9 +1784,9 @@ function vCoachAcct(){
 }
 
 /* ----- "more" hub and sub views ----- */
-const MORE=[['cardio',_('الكارديو'),_('جري، عجلة، سباحة')],['body',_('قياسات الجسم'),_('وسط، صدر، دراع')],['well',_('صحتي اليومية'),_('نوم، عادات، مزاج')],['cal',_('التقويم'),_('أيام تمرينك')],['ach',_('الإنجازات'),_('شارات وأهداف')],['tools',_('أدوات'),_('1RM، أوزان، تايمر')],['set',_('الإعدادات'),_('ملفك، نسخ احتياطي')]];
+const MORE=[['ai',_('المساعد الذكي'),_('اسأل عن تمرينك وأكلك')],['cardio',_('الكارديو'),_('جري، عجلة، سباحة')],['body',_('قياسات الجسم'),_('وسط، صدر، دراع')],['well',_('صحتي اليومية'),_('نوم، عادات، مزاج')],['cal',_('التقويم'),_('أيام تمرينك')],['ach',_('الإنجازات'),_('شارات وأهداف')],['tools',_('أدوات'),_('1RM، أوزان، تايمر')],['set',_('الإعدادات'),_('ملفك، نسخ احتياطي')]];
 function vMore(){
-  const m=({cardio:vCardio,body:vBody,well:vWell,cal:vCal,ach:vAch,tools:vTools,set:vSet})[S.sub];if(S.sub&&m){const t=MORE.find(x=>x[0]===S.sub);return _('<button class="back" data-act="sub" data-v="">← رجوع</button><h2 style="margin-top:4px">')+esc(t[1])+'</h2>'+m()}
+  const m=({ai:vAi,cardio:vCardio,body:vBody,well:vWell,cal:vCal,ach:vAch,tools:vTools,set:vSet})[S.sub];if(S.sub&&m){const t=MORE.find(x=>x[0]===S.sub);return _('<button class="back" data-act="sub" data-v="">← رجوع</button><h2 style="margin-top:4px">')+esc(t[1])+'</h2>'+m()}
   return _('<h2>المزيد</h2><div class="tiles">')+MORE.map(m=>'<button class="tile" data-act="sub" data-v="'+m[0]+'"><b>'+m[1]+'</b><span class="muted">'+m[2]+'</span></button>').join('')+'</div>';
 }
 
@@ -2093,6 +2157,10 @@ document.addEventListener('click',function(ev){
    case 'reply':replyTo(d);break;
    case 'replycancel':U.reply=null;replyUi();break;
    case 'gotoq':gotoQuote(d);break;
+   case 'aisend':aiSend(($('#aiin')||{}).value);break;
+   case 'aiq':aiSend(AIQ[+d.i]);break;
+   case 'aiclear':try{localStorage.removeItem(aiKey())}catch(e){}U.ai=null;render();break;
+   case 'aiopen':S.tab='more';S.sub='ai';render();break;
    case 'pwchange':{CLOUD.reset((C.user&&C.user.email)||'').then(()=>toast(_('بعتنالك لينك تغيير الباسورد على إيميلك'))).catch(()=>toast(_('تعذر الإرسال')));break}
    case 'pwshow':{const pw=$('#a_pw');if(pw){const sh=pw.type==='password';pw.type=sh?'text':'password';const b=document.querySelector('[data-act="pwshow"]');if(b)b.textContent=sh?_('إخفاء الباسورد'):_('إظهار الباسورد')}break}
    case 'signout':signOutNow();break;
