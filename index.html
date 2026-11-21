@@ -817,7 +817,7 @@ function accPill(p){
   if(s==='pending')return '<span class="pill bad">'+_('في انتظار التفعيل')+'</span>';
   if(s==='expired')return '<span class="pill bad">'+_('انتهى في ')+fmtD(effUntil(p))+'</span>';
   const d=daysLeft(effUntil(p));
-  return '<span class="pill'+(d>7?' good':'')+'">'+_('ساري لحد ')+fmtD(effUntil(p))+'</span>';
+  return '<span class="pill'+(d>7?' good':'')+'">'+_('ساري لحد ')+fmtD(effUntil(p))+' · '+d+_n(d,' يوم')+'</span>';
 }
 function extBtns(id){
   return '<div class="chips" style="margin:8px 0 0">'+[1,2,3].map(m=>'<button class="chip" data-act="ext" data-id="'+esc(id)+'" data-m="'+m+'">+ '+(m===1?_('شهر'):m===2?_('شهرين'):_('3 شهور'))+'</button>').join('')+'</div>';
@@ -858,14 +858,14 @@ function blockAccess(id){
 function unblockAccess(id){setAccess(id,{blocked:false},_('اتفعّل الحساب تاني'))}
 function vAdmin(){
   const me=C.user&&C.user.uid,L=(C.coaches||[]).filter(c=>c.uid!==me);
-  let h='<h2>'+_('الإدارة')+'</h2>';
+  let h='<h2>'+_('المدربين')+'</h2>';
   if(!L.length)return h+'<div class="card muted">'+_('لسه مفيش مدربين مسجّلين.')+'</div>';
   const cnt=k=>L.filter(c=>accState(c)===k).length;
   h+='<div class="grid3" style="margin-bottom:12px"><div class="stat"><b>'+L.length+'</b><span>'+_('مدرب')+'</span></div><div class="stat"><b>'+cnt('active')+'</b><span>'+_('فعّال')+'</span></div><div class="stat"><b>'+cnt('pending')+'</b><span>'+_('في الانتظار')+'</span></div></div>';
   const rank={pending:0,expired:1,active:2,blocked:3};
   L.slice().sort((a,b)=>(rank[accState(a)]-rank[accState(b)])||(effUntil(a)-effUntil(b))).forEach(c=>{
     const s=accState(c),n=(C.cnt||{})[c.uid];
-    h+='<div class="card"><div class="row sp"><div class="row" style="gap:10px;align-items:center">'+avHtml(c,48)+'<div><b>'+esc(c.name||_('مدرب'))+'</b><div class="muted" style="overflow-wrap:anywhere;font-size:12px">'+esc(c.email||'')+'</div></div></div>'+accPill(c)+'</div><div style="margin-top:8px">'+callBlock(c.phone)+'</div>'+
+    h+='<div class="card"><div class="row sp"><div class="row" style="gap:10px;align-items:center">'+avHtml(c,48)+'<div><b>'+esc(c.name||_('مدرب'))+'</b><div class="muted" style="overflow-wrap:anywhere;font-size:12px">'+esc(c.email||'')+'</div></div></div>'+msgMark(c)+accPill(c)+'</div><div style="margin-top:8px">'+callBlock(c.phone)+'</div>'+
        (n!=null?'<div class="muted" style="margin-top:6px">'+_('عدد العملاء: ')+n+'</div>':'')+extBtns(c.uid)+
        '<div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" data-act="achat" data-id="'+esc(c.uid)+'">💬 '+_('رسايل')+'</button><button class="btn line sm" data-act="'+(s==='blocked'?'unblk':'blk')+'" data-id="'+esc(c.uid)+'">'+(s==='blocked'?_('رجّعه'):_('إيقاف وإخراج من النظام'))+'</button></div></div>';
   });
@@ -1330,7 +1330,7 @@ function chatRead(el){
   if(el.scrollHeight-el.scrollTop-el.clientHeight>30)return;
   const bs=el.querySelectorAll('.bub');if(!bs.length)return;
   const t=+bs[bs.length-1].dataset.ts||0;
-  try{if(t>(+localStorage.getItem(rdKey(I.th))||0))localStorage.setItem(rdKey(I.th),String(t))}catch(e){}
+  try{if(t>(+localStorage.getItem(rdKey(I.th))||0)){localStorage.setItem(rdKey(I.th),String(t));try{navBadges()}catch(e){}}}catch(e){}
 }
 function chatPos(el,mode){
   const I=chatInfo(el);if(!I||!I.th)return;
@@ -1446,13 +1446,14 @@ function aiCtx(){
   return L.join('\n').slice(0,2400);
 }
 function aiMsgsHtml(){const A=aiSt();
-  let h=A.msgs.map(m=>'<div class="aib '+(m.r==='u'?'u':'a')+'">'+esc(m.t)+'</div>').join('');
+  let h=A.msgs.map(m=>'<div class="aib '+(m.r==='u'?'u':'a')+'" data-id="'+esc(m.id||'')+'">'+(m.re?'<button class="aiq" data-act="aigo" data-id="'+esc(m.re.id||'')+'"><b>'+(m.re.r==='u'?_('أنت'):_('المساعد'))+'</b>: '+esc(m.re.t)+'</button>':'')+esc(m.t)+(m.id?'<button class="aire" data-act="airep" data-id="'+esc(m.id)+'" aria-label="'+_('رد')+'">↩</button>':'')+'</div>').join('');
   if(A.busy)h+='<div class="aib a" aria-live="polite">…</div>';
   return h}
 function aiRender(){const A=aiSt(),b=$('#aimsgs');if(!b)return;
   b.innerHTML=aiMsgsHtml();
   const q=$('#aiq');if(q)q.hidden=A.msgs.length>0;
   const s=$('#aisend');if(s)s.disabled=!!A.busy;
+  const rb=$('#airb');if(rb)rb.innerHTML=A.reply?'<div class="aireplybar"><span>↩ '+_('رد على')+': '+esc(A.reply.t)+'</span><button class="x" data-act="aircancel" aria-label="'+_('إلغاء الرد')+'">✕</button></div>':'';
   const last=b.lastElementChild;if(last&&last.scrollIntoView)last.scrollIntoView({block:'end'})}
 function vAi(){
   if(!C.user)return '<div class="card muted">'+_('سجّل دخول بحسابك عشان تستخدم المساعد الذكي.')+'</div>';
@@ -1460,20 +1461,21 @@ function vAi(){
   return '<div class="card muted" style="font-size:.92em">'+(isAdminUser()?_('مساعد الإدارة: بيجاوب على أي سؤال عن التطبيق وتشغيله وكمان التغذية والتمارين وبيانات عملائك.'):isCoach()?_('مساعد المدرب: تغذية وتمارين وبدائل بنفس الماكروز وسعرات، ومتابعة عملائك.'):_('مساعد ذكي بيجاوب على أسئلة التمرين والأكل بناءً على بياناتك. مش بديل عن مدربك ولا عن الدكتور.'))+'</div>'+
    '<div id="aimsgs" class="aimsgs">'+aiMsgsHtml()+'</div>'+
    '<div class="chips" id="aiq"'+(A.msgs.length?' hidden':'')+'>'+aiQs().map((q,i)=>'<button class="chip" data-act="aiq" data-i="'+i+'">'+esc(q)+'</button>').join('')+'</div>'+
-   '<div class="row aibar"><textarea id="aiin" rows="1" maxlength="500" placeholder="'+_('اكتب سؤالك هنا')+'" aria-label="'+_('اكتب سؤالك هنا')+'"></textarea><button class="btn" id="aisend" data-act="aisend"'+(A.busy?' disabled':'')+'>'+_('إرسال')+'</button></div>'+
+   '<div id="airb"></div><div class="row aibar"><textarea id="aiin" rows="1" maxlength="500" placeholder="'+_('اكتب سؤالك هنا')+'" aria-label="'+_('اكتب سؤالك هنا')+'"></textarea><button class="btn" id="aisend" data-act="aisend"'+(A.busy?' disabled':'')+'>'+_('إرسال')+'</button></div>'+
    (A.msgs.length?'<button class="linkbtn" data-act="aiclear" style="margin-top:10px">'+_('مسح المحادثة')+'</button>':'')+
    '<style>.aimsgs{display:flex;flex-direction:column;gap:8px;margin:10px 0}.aib{max-width:88%;padding:10px 12px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}.aib.u{align-self:flex-end;background:var(--accent);color:var(--accent-fg)}.aib.a{align-self:flex-start;background:var(--surface);border:1px solid var(--line)}.aibar{align-items:flex-end;gap:8px;margin-top:8px}#aiq[hidden]{display:none}html[dir=rtl] .aib.u{align-self:flex-start}html[dir=rtl] .aib.a{align-self:flex-end}.aibar textarea{flex:1;resize:none;min-height:44px;max-height:120px;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg)}</style>';
 }
 async function aiSend(txt){
   const A=aiSt();txt=String(txt||'').trim().slice(0,500);if(!txt||A.busy)return;
   const inp=$('#aiin');if(inp)inp.value='';
-  A.msgs.push({r:'u',t:txt});A.busy=true;aiRender();
+  const re=A.reply?{id:A.reply.id,t:A.reply.t,r:A.reply.r}:null;A.reply=null;
+  A.msgs.push({r:'u',t:txt,id:'m'+Date.now(),re});A.busy=true;aiRender();
   let out='',err=false;
   try{
     const tok=await CLOUD.idToken();
     if(!tok||!PUSHCFG.url){out=_('المساعد لسه مش متفعّل.');err=true}
     else{
-      const body=JSON.stringify({ctx:aiCtx(),role:isCoach()?'coach':'client',lang:LANG,msgs:A.msgs.filter(m=>!m.e).slice(-10).map(m=>({role:m.r==='u'?'user':'assistant',content:m.t}))});
+      const body=JSON.stringify({ctx:aiCtx(),role:isCoach()?'coach':'client',lang:LANG,msgs:A.msgs.filter(m=>!m.e).slice(-10).map(m=>({role:m.r==='u'?'user':'assistant',content:(m.re?'[In reply to: "'+m.re.t+'"] ':'')+m.t}))});
       const r=await fetch(PUSHCFG.url.replace(/\/$/,'')+'/ai',{method:'POST',headers:{Authorization:'Bearer '+tok,'content-type':'application/json'},body});
       const j=await r.json().catch(()=>({}));
       if(r.ok&&j.reply)out=j.reply;
@@ -1481,13 +1483,42 @@ async function aiSend(txt){
         if(isAdminUser()&&r.status!==429)out+=' ['+r.status+' '+(j.error||'')+(j.d?': '+j.d:'')+']'
     }
   }catch(e){err=true;out=_('مفيش اتصال دلوقتي، جرب تاني.')}
-  A.busy=false;A.msgs.push({r:'a',t:out,e:err?1:0});aiSave();
+  A.busy=false;A.msgs.push({r:'a',t:out,e:err?1:0,id:'m'+Date.now()});aiSave();
   if($('#aimsgs'))aiRender();
 }
 document.addEventListener('keydown',e=>{const t=e.target;if(t&&t.id==='aiin'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();aiSend(t.value)}});
 (function(){const a=vHome;vHome=function(){const x=a.apply(this,arguments);
   if(!C.user||!PUSHCFG.url)return x;
   return x+'<div class="card"><div class="row sp"><div class="grow"><h3 style="margin:0">'+_('المساعد الذكي')+'</h3><div class="muted">'+_('اسأل عن تمرينك وأكلك')+'</div></div><button class="btn alt sm" data-act="aiopen">'+_('اسأل')+'</button></div></div>'}})();
+
+function aiReply(id){const A=aiSt(),m=A.msgs.find(x=>x.id===id);if(!m)return;
+  A.reply={id:m.id,t:String(m.t).replace(/\s+/g,' ').slice(0,120),r:m.r};aiRender();const i=$('#aiin');if(i)i.focus()}
+function aiGo(id){const b=document.querySelector('.aib[data-id="'+String(id||'').replace(/["\\]/g,'')+'"]');if(!b)return;
+  b.scrollIntoView({block:'center'});b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),1400)}
+/* ----- unread marks on cards/tabs, subscription line, AI tab scroll ----- */
+const rdTs=th=>{try{return +localStorage.getItem(rdKey(th))||0}catch(e){return 0}};
+const unreadIn=c=>{const m=c&&c.lastMsg;return !!(m&&m.from==='client'&&m.ts>rdTs(c.uid))};
+function msgMark(c){return unreadIn(c)?'<span class="pill bad msgmk">💬 '+_('رسالة جديدة')+'</span>':''}
+function subLine(c){
+  if(accState(c)!=='active')return '';
+  const u=effUntil(c),d=daysLeft(u);
+  return '<div class="subl"><div class="row sp muted" style="font-size:12px"><span>'+_('الاشتراك')+'</span><span class="num">'+_('باقي ')+d+_n(d,' يوم')+' · '+fmtD(u)+'</span></div><div class="bar" style="margin-top:4px"><i style="width:'+Math.max(4,Math.min(100,d/90*100))+'%'+(d<=7?';background:var(--danger)':'')+'"></i></div></div>'}
+function navBadges(){
+  const set=(v,n)=>{const b=document.querySelector('#nav button[data-v="'+v+'"]');if(!b)return;const o=b.querySelector('.bdg.mb');if(o)o.remove();
+    if(n>0){const i=document.createElement('i');i.className='bdg mb';i.textContent=n>9?'9+':String(n);b.appendChild(i)}};
+  if(!isCoach())return;
+  if(isAdminUser())set('admin',(C.coaches||[]).filter(c=>c.uid!==(C.user&&C.user.uid)&&unreadIn(c)).length);
+  else{const me=C.user&&C.user.uid,t=rdTs(me);set('acct',(C.msgs||[]).filter(m=>m.from==='admin'&&m.ts>t).length)}
+}
+(function(){const st=document.createElement('style');
+  st.textContent='.msgmk{margin-inline-end:6px}.subl{margin-top:8px}.aib .aire{display:block;margin-top:4px;background:none;border:0;color:inherit;opacity:.55;font-size:13px;padding:0;cursor:pointer}.aib .aiq{display:block;width:100%;text-align:start;font:inherit;font-size:12px;opacity:.85;border:0;border-inline-start:3px solid var(--flame);background:rgba(127,127,127,.14);color:inherit;padding:4px 8px;border-radius:6px;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aib.flash{outline:2px solid var(--flame)}.aireplybar{display:flex;align-items:center;gap:8px;background:var(--surface2);border-inline-start:3px solid var(--flame);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:8px}.aireplybar span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aireplybar .x{background:none;border:0;color:inherit;font-size:16px}';
+  document.head.appendChild(st)})();
+(function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{aiAfter();navBadges()}catch(e){}return x}})();
+(function(){const r0=renderCoachApp;renderCoachApp=function(){const x=r0.apply(this,arguments);try{aiAfter();navBadges()}catch(e){}return x}})();
+(function(){const a=ntCoach;ntCoach=function(){const x=a.apply(this,arguments);try{navBadges()}catch(e){}return x}})();
+(function(){const a=ntAdmin;ntAdmin=function(){const x=a.apply(this,arguments);try{navBadges()}catch(e){}return x}})();
+(function(){const a=updateMsgs;updateMsgs=function(){const x=a.apply(this,arguments);try{navBadges()}catch(e){}return x}})();
+function aiAfter(){if($('#aimsgs')){if(!U.aiShown){U.aiShown=true;aiRender()}}else U.aiShown=false}
 function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];closeClient()}
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
 function msgsHtml(list,me){
@@ -1652,7 +1683,7 @@ function renderCoachApp(){
   const t=U.cc.tab;
   const h=t==='clients'?(U.cc.sel?(U.cc.edit?vPlanEditor():vClientDetail()):vClients()):(t==='code'?vMyCode():(t==='ai'?vAi():(t==='admin'&&isAdminUser()?vAdmin():vCoachAcct())));
   $('#main').innerHTML=h;
-  const nav=$('#nav');const CT=[['clients',_('العملاء'),'coach'],['code',_('كودي'),'key'],['ai',_('المساعد'),'ai']].concat(isAdminUser()?[['admin',_('الإدارة'),'acct']]:[]).concat([['acct',_('حسابي'),'acct']]);nav.style.gridTemplateColumns='repeat('+CT.length+',1fr)';
+  const nav=$('#nav');const CT=[['clients',_('العملاء'),'coach'],['code',_('كودي'),'key'],['ai',_('المساعد'),'ai']].concat(isAdminUser()?[['admin',_('المدربين'),'coaches']]:[]).concat([['acct',_('حسابي'),'acct']]);nav.style.gridTemplateColumns='repeat('+CT.length+',1fr)';
   nav.innerHTML=CT.map(x=>'<button class="'+(t===x[0]?'on':'')+'" data-act="ctab" data-v="'+x[0]+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+IC[x[2]]+'</svg>'+x[1]+'</button>').join('');
   renderLayer();setSync();paintBadges();
 }
@@ -1670,7 +1701,7 @@ function vClients0(){
     const g=sexOf(c);if(g!==lastG){lastG=g;h+='<h3 style="margin:16px 0 8px">'+(g==='m'?_('العملاء الذكور'):g==='f'?_('العميلات الإناث'):_('غير محدد'))+' ('+GC[g]+')</h3>'}
     const s=c.summary||{},idle=idleOf(c);
     const pill=idle===null?_('<span class="pill bad">لسه مبدأش</span>'):idle===0?_('<span class="pill good">نشط النهاردة</span>'):idle>=3?_('<span class="pill bad">من ')+idle+_n(idle,' يوم</span>'):_('<span class="pill">من ')+idle+_n(idle,' يوم</span>');
-    h+='<button class="card btnlike" data-act="copen" data-id="'+esc(c.uid)+'"><div class="row sp"><div class="row" style="gap:10px;align-items:center">'+avHtml(c,44)+'<div><b>'+esc(c.name||_('عميل'))+'</b>'+(c.phone?'<div class="ph" style="font-size:14px">'+esc(c.phone)+'</div>':'')+'</div></div>'+pill+_('</div><div class="muted num" style="margin-top:6px">أسبوع ')+(s.weekN||0)+' / '+(s.weekGoal||4)+_(' · سلسلة ')+(s.streak||0)+_(' · وزن ')+(s.weight||'—')+' · '+fmt(s.kcalAvg||0)+_(' سعر</div><div class="muted" style="font-size:12px;margin-top:2px">آخر مزامنة ')+(s.ts?esc(ago(s.ts)):'—')+'</div></button>';
+    h+='<button class="card btnlike" data-act="copen" data-id="'+esc(c.uid)+'"><div class="row sp"><div class="row" style="gap:10px;align-items:center">'+avHtml(c,44)+'<div><b>'+esc(c.name||_('عميل'))+'</b>'+(c.phone?'<div class="ph" style="font-size:14px">'+esc(c.phone)+'</div>':'')+'</div></div>'+msgMark(c)+pill+_('</div><div class="muted num" style="margin-top:6px">أسبوع ')+(s.weekN||0)+' / '+(s.weekGoal||4)+_(' · سلسلة ')+(s.streak||0)+_(' · وزن ')+(s.weight||'—')+' · '+fmt(s.kcalAvg||0)+_(' سعر</div><div class="muted" style="font-size:12px;margin-top:2px">آخر مزامنة ')+(s.ts?esc(ago(s.ts)):'—')+'</div>'+subLine(c)+'</button>';
     h+=callRow(c);h+=subRow(c);
   });
   return h;
@@ -1792,9 +1823,9 @@ function vCoachAcct(){
 }
 
 /* ----- "more" hub and sub views ----- */
-const MORE=[['ai',_('المساعد الذكي'),_('اسأل عن تمرينك وأكلك')],['cardio',_('الكارديو'),_('جري، عجلة، سباحة')],['body',_('قياسات الجسم'),_('وسط، صدر، دراع')],['well',_('صحتي اليومية'),_('نوم، عادات، مزاج')],['cal',_('التقويم'),_('أيام تمرينك')],['ach',_('الإنجازات'),_('شارات وأهداف')],['tools',_('أدوات'),_('1RM، أوزان، تايمر')],['set',_('الإعدادات'),_('ملفك، نسخ احتياطي')]];
+const MORE=[['cardio',_('الكارديو'),_('جري، عجلة، سباحة')],['body',_('قياسات الجسم'),_('وسط، صدر، دراع')],['well',_('صحتي اليومية'),_('نوم، عادات، مزاج')],['cal',_('التقويم'),_('أيام تمرينك')],['ach',_('الإنجازات'),_('شارات وأهداف')],['tools',_('أدوات'),_('1RM، أوزان، تايمر')],['set',_('الإعدادات'),_('ملفك، نسخ احتياطي')]];
 function vMore(){
-  const m=({ai:vAi,cardio:vCardio,body:vBody,well:vWell,cal:vCal,ach:vAch,tools:vTools,set:vSet})[S.sub];if(S.sub&&m){const t=MORE.find(x=>x[0]===S.sub);return _('<button class="back" data-act="sub" data-v="">← رجوع</button><h2 style="margin-top:4px">')+esc(t[1])+'</h2>'+m()}
+  const m=({cardio:vCardio,body:vBody,well:vWell,cal:vCal,ach:vAch,tools:vTools,set:vSet})[S.sub];if(S.sub&&m){const t=MORE.find(x=>x[0]===S.sub);return _('<button class="back" data-act="sub" data-v="">← رجوع</button><h2 style="margin-top:4px">')+esc(t[1])+'</h2>'+m()}
   return _('<h2>المزيد</h2><div class="tiles">')+MORE.map(m=>'<button class="tile" data-act="sub" data-v="'+m[0]+'"><b>'+m[1]+'</b><span class="muted">'+m[2]+'</span></button>').join('')+'</div>';
 }
 
@@ -1986,19 +2017,20 @@ const IC={
  food:'<path d="M6 3v8a3 3 0 0 0 3 3v7M9 3v6M12 3v8a3 3 0 0 1-3 3M17 3c-2 2-2 6 0 8v10"/>',
  prog:'<path d="M3 20h18M6 16v-5M11 16V6M16 16v-8M21 16v-3"/>',
  coach:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 0 1 0 6M18 14c2 .6 3.5 2.6 3.5 6"/>',
+ coaches:'<circle cx="12" cy="7" r="3.2"/><path d="M5 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2M8.5 3.5L12 2l3.5 1.5"/>',
  ai:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/>',
  key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>',
  acct:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>'
 };
-const TABS=[['home',_('الرئيسية')],['train',_('تمرين')],['food',_('أكل')],['prog',_('تقدم')],['coach',_('مدربي')],['more',_('المزيد')]];
+const TABS=[['home',_('الرئيسية')],['train',_('تمرين')],['food',_('أكل')],['prog',_('تقدم')],['coach',_('مدربي')],['ai',_('المساعد')],['more',_('المزيد')]];
 function render(){
   {const g=gate();if(g){renderGate(g);return}}
   if(isCoach()){renderCoachApp();return}
-  const views={home:vHome,train:vTrain,food:vFood,prog:vProg,coach:vCoachTab,more:vMore};
+  const views={home:vHome,train:vTrain,food:vFood,prog:vProg,coach:vCoachTab,ai:vAi,more:vMore};
   if(!views[S.tab]){S.tab='home';S.sub=null}
   $('#main').innerHTML=views[S.tab]();
-  $('#nav').style.gridTemplateColumns='';
+  $('#nav').style.gridTemplateColumns='repeat(7,1fr)';
   $('#nav').innerHTML=TABS.map(t=>'<button class="'+(S.tab===t[0]?'on':'')+'" data-act="tab" data-v="'+t[0]+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+IC[t[0]]+'</svg>'+t[1]+'</button>').join('');
   renderLayer();setSync();tick();if(S.tab==='coach')ntRead('msg');paintBadges();
   if(S.tab==='more'&&S.sub==='tools')toolCalc();
@@ -2169,7 +2201,10 @@ document.addEventListener('click',function(ev){
    case 'aisend':aiSend(($('#aiin')||{}).value);break;
    case 'aiq':aiSend(aiQs()[+d.i]);break;
    case 'aiclear':try{localStorage.removeItem(aiKey())}catch(e){}U.ai=null;render();break;
-   case 'aiopen':S.tab='more';S.sub='ai';render();break;
+   case 'aiopen':S.tab='ai';S.sub=null;render();window.scrollTo(0,0);break;
+   case 'airep':aiReply(d.id);break;
+   case 'aircancel':aiSt().reply=null;aiRender();break;
+   case 'aigo':aiGo(d.id);break;
    case 'pwchange':{CLOUD.reset((C.user&&C.user.email)||'').then(()=>toast(_('بعتنالك لينك تغيير الباسورد على إيميلك'))).catch(()=>toast(_('تعذر الإرسال')));break}
    case 'pwshow':{const pw=$('#a_pw');if(pw){const sh=pw.type==='password';pw.type=sh?'text':'password';const b=document.querySelector('[data-act="pwshow"]');if(b)b.textContent=sh?_('إخفاء الباسورد'):_('إظهار الباسورد')}break}
    case 'signout':signOutNow();break;
