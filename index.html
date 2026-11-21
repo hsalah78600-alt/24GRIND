@@ -1159,8 +1159,8 @@ function vPending(a){
 }
 let cfT=null,cfSeq=0;
 const cfAuto=()=>{const k=$('#ck');if(!k)return false;return k.dataset.auto==='1'||(!k.value&&!($('#cp')||{}).value&&!($('#cc')||{}).value&&!($('#cf')||{}).value)};
-function cfRows(L){
-  return L.map((f,i)=>'<button class="frow" data-act="cfpick" data-i="'+i+'"><span class="grow"><span>'+esc(fName(f))+'</span><span class="muted num" style="display:block;font-size:12px;margin-top:2px">'+_('بروتين')+' '+f1(f.p)+' · '+_('كارب')+' '+f1(f.c)+' · '+_('دهون')+' '+f1(f.f)+'</span></span><span class="muted num" style="text-align:end"><b style="color:var(--fg)">'+fmt(f.k)+'</b> '+_('سعر')+'<span style="display:block;font-size:11px">'+_('لكل 100 ')+unitLbl(f.u)+'</span></span></button>').join('');
+function cfRows(L,act){act=act||'cfpick';
+  return L.map((f,i)=>'<button class="frow" data-act="'+act+'" data-i="'+i+'"><span class="grow"><span>'+esc(fName(f))+'</span><span class="muted num" style="display:block;font-size:12px;margin-top:2px">'+_('بروتين')+' '+f1(f.p)+' · '+_('كارب')+' '+f1(f.c)+' · '+_('دهون')+' '+f1(f.f)+'</span></span><span class="muted num" style="text-align:end"><b style="color:var(--fg)">'+fmt(f.k)+'</b> '+_('سعر')+'<span style="display:block;font-size:11px">'+_('لكل 100 ')+unitLbl(f.u)+'</span></span></button>').join('');
 }
 function cfFill(f){
   const set=(id,v)=>{const e=$('#'+id);if(e)e.value=v};
@@ -1198,6 +1198,47 @@ function cfSearch(q){
       if(!L.length){if(O.length){if(cfAuto())cfFill(O[0])}else if(msg)msg.textContent=_('مفيش نتايج على الإنترنت')}
     }catch(e){if(my===cfSeq&&!L.length&&msg)msg.textContent=_('تعذر البحث على الإنترنت')}
   },650);
+}
+
+/* ---- coach: custom item form with the same auto-fill ---- */
+let ccT=null,ccSeq=0;
+const ccAuto=()=>{const k=$('#cck');if(!k)return false;return k.dataset.auto==='1'||(!k.value&&!($('#ccp')||{}).value&&!($('#ccc')||{}).value&&!($('#ccf')||{}).value)};
+function ccFill(f){
+  const set=(id,v)=>{const e=$('#'+id);if(e)e.value=v};
+  set('cck',f.k);set('ccp',f1(f.p));set('ccc',f1(f.c));set('ccf',f1(f.f));
+  const u=$('#ccu');if(u)u.value=f.u==='ml'?'ml':'g';
+  const k=$('#cck');if(k)k.dataset.auto='1';
+  const m=$('#ccmsg');if(m)m.textContent='✓ '+_('اتحسبت القيم لكل 100 تلقائي من:')+' '+(f.e&&/[a-z]/i.test(f.e)&&!/[؀-ۿ]/.test(f.n)?f.e:fName(f));
+  ccPrev();
+}
+function ccPrev(){
+  const el=$('#ccprev');if(!el)return;
+  const g=pf(($('#ccg')||{}).value)||0,k=pf(($('#cck')||{}).value),u=($('#ccu')||{}).value==='ml'?'ml':'g';
+  if(!(g>0)||!(k>=0)){el.textContent='';return}
+  const r=g/100,v=id=>pf(($('#'+id)||{}).value)||0;
+  el.textContent=fmt(g)+' '+unitLbl(u)+': '+fmt(k*r)+' '+_('سعر')+' · '+_('بروتين')+' '+f1(v('ccp')*r)+' · '+_('كارب')+' '+f1(v('ccc')*r)+' · '+_('دهون')+' '+f1(v('ccf')*r);
+}
+function ccSearch(q){
+  clearTimeout(ccT);q=(q||'').trim();const sug=$('#ccsug'),msg=$('#ccmsg');if(!sug)return;
+  const my=++ccSeq;
+  if(q.length<2){U.ccs=[];sug.innerHTML='';if(msg)msg.textContent='';return}
+  const L=foodMatches(q,'all',true).slice(0,5);U.ccs=L;sug.innerHTML=cfRows(L,'ccpick');
+  if(L.length){if(ccAuto())ccFill(L[0])}else if(msg)msg.textContent='';
+  if(L.length>=3)return;
+  if(!L.length&&msg)msg.textContent=_('بدوّر في قاعدة الأكل العالمية…');
+  ccT=setTimeout(async()=>{
+    try{
+      const O=await offFetch(q);if(my!==ccSeq)return;
+      U.ccs=L.concat(O);const s2=$('#ccsug');if(s2)s2.innerHTML=cfRows(U.ccs,'ccpick');
+      if(!L.length){if(O.length){if(ccAuto())ccFill(O[0])}else if(msg)msg.textContent=_('مفيش نتايج على الإنترنت')}
+    }catch(e){if(my===ccSeq&&!L.length&&msg)msg.textContent=_('تعذر البحث على الإنترنت')}
+  },650);
+}
+function ccBoxHtml(){
+  const fld=(id,l,m)=>'<div><label class="f" for="'+id+'">'+l+'</label><input id="'+id+'" inputmode="decimal"></div>';
+  return '<div class="muted" style="margin:2px 0 10px">'+_('اكتب اسم الصنف وهتتملّى القيم لكل 100 تلقائي، وبعدين حدد الكمية.')+'</div><div class="grid2"><div><label class="f" for="ccn">'+_('الاسم')+'</label><input id="ccn" autocomplete="off"></div><div><label class="f" for="ccu">'+_('النوع')+'</label><select id="ccu"><option value="g">'+_('أكل (جم)')+'</option><option value="ml">'+_('مشروب (مل)')+'</option></select></div>'
+   +fld('cck',_('سعرات / 100'))+fld('ccp',_('بروتين / 100'))+fld('ccc',_('كارب / 100'))+fld('ccf',_('دهون / 100'))
+   +'</div><div id="ccmsg" class="muted" style="margin-top:8px"></div><div id="ccsug"></div><div class="row" style="margin:10px 0 0;align-items:center"><label class="f" for="ccg" style="margin:0">'+_('حجم الكمية (جم / مل)')+'</label><input id="ccg" inputmode="decimal" value="100" style="max-width:100px"></div><div id="ccprev" class="muted num" style="margin-top:8px"></div><button class="btn alt block" style="margin-top:10px" data-act="cmadd">'+_('أضف للخطة')+'</button>';
 }
 function regSex(){
   return '<label class="f" for="a_sex">'+_('النوع')+'</label><select id="a_sex" style="margin-bottom:10px"><option value="">'+_('اختار النوع')+'</option><option value="m"'+(U.pSex==='m'?' selected':'')+'>'+_('ذكر')+'</option><option value="f"'+(U.pSex==='f'?' selected':'')+'>'+_('أنثى')+'</option></select>';
@@ -1300,11 +1341,48 @@ async function doReset(){
 (function(){const v0=vAuth;vAuth=function(){return U.authMode==='reset'?resetHtml():v0.apply(this,arguments)}})();
 function pwUi(){document.querySelectorAll('[data-act="signout"]').forEach(b=>{if(b.previousElementSibling&&b.previousElementSibling.dataset&&b.previousElementSibling.dataset.act==='pwchange')return;
   const n=document.createElement('button');n.className='btn line block';n.style.marginBottom='10px';n.dataset.act='pwchange';n.textContent=_('تغيير الباسورد');b.parentNode.insertBefore(n,b)})}
+
+/* ---- coach "custom item" form: auto calories/macros per 100 + amount ---- */
+let cmT=null,cmSeq=0;
+function cmLine(b,g){const r=g/100;return _('لكل 100 ')+unitLbl(b.u)+': '+fmt(b.k)+' '+_('سعر')+' · '+_('بروتين')+' '+f1(b.p)+' · '+_('كارب')+' '+f1(b.c)+' · '+_('دهون')+' '+f1(b.f)}
+function cmRows(L){return L.map((f,i)=>'<button class="frow" data-act="cmpick" data-i="'+i+'"><span class="grow"><span>'+esc(fName(f))+'</span><span class="muted num" style="display:block;font-size:12px;margin-top:2px">'+cmLine(f,100)+'</span></span></button>').join('')}
+const cmAuto=()=>{const k=$('#cck');if(!k)return false;return k.dataset.auto==='1'||(!k.value&&!($('#ccp')||{}).value&&!($('#ccc')||{}).value&&!($('#ccf')||{}).value)};
+function cmScale(){const b=U.cmBase,k=$('#cck');if(!b||!k||k.dataset.auto!=='1')return;
+  const g=pf(($('#ccg')||{}).value)||100,r=g/100;
+  k.value=Math.round(b.k*r);$('#ccp').value=f1(b.p*r);$('#ccc').value=f1(b.c*r);$('#ccf').value=f1(b.f*r);
+  const pv=$('#cmprev');if(pv)pv.textContent=cmLine(b,g)}
+function cmFill(f){U.cmBase={k:+f.k||0,p:+f.p||0,c:+f.c||0,f:+f.f||0,u:f.u==='ml'?'ml':'g'};
+  const k=$('#cck');if(k)k.dataset.auto='1';cmScale();
+  const m=$('#cmmsg');if(m)m.textContent='✓ '+_('اتحسبت القيم لكل 100 تلقائي من:')+' '+(f.e&&/[a-z]/i.test(f.e)&&!/[؀-ۿ]/.test(f.n)?f.e:fName(f))}
+function cmSearch(q){
+  clearTimeout(cmT);q=(q||'').trim();const sug=$('#cmsug'),msg=$('#cmmsg');if(!sug)return;
+  const my=++cmSeq;
+  if(q.length<2){U.cms=[];sug.innerHTML='';if(msg)msg.textContent='';return}
+  const L=foodMatches(q,'all',true).slice(0,5);U.cms=L;sug.innerHTML=cmRows(L);
+  if(L.length){if(cmAuto())cmFill(L[0])}else if(msg)msg.textContent='';
+  if(L.length>=3)return;
+  if(!L.length&&msg)msg.textContent=_('بدوّر في قاعدة الأكل العالمية…');
+  cmT=setTimeout(async()=>{
+    try{
+      const O=await offFetch(q);if(my!==cmSeq)return;
+      U.cms=L.concat(O);const s2=$('#cmsug');if(s2)s2.innerHTML=cmRows(U.cms);
+      if(!L.length){if(O.length){if(cmAuto())cmFill(O[0])}else if(msg)msg.textContent=_('مفيش نتايج على الإنترنت')}
+    }catch(e){if(my===cmSeq&&!L.length&&msg)msg.textContent=_('تعذر البحث على الإنترنت')}
+  },650);
+}
+function cmUi(){const n=$('#ccn');if(!n||$('#cmbox'))return;const g=n.closest('.grid2');if(!g)return;
+  U.cmBase=null;const d=document.createElement('div');d.id='cmbox';
+  d.innerHTML='<div id="cmmsg" class="muted" style="margin-top:8px"></div><div id="cmsug"></div><div class="row" style="margin:10px 0 0;align-items:center"><label class="f" for="ccg" style="margin:0">'+_('حجم الكمية (جم / مل)')+'</label><input id="ccg" inputmode="decimal" value="100" style="max-width:100px"></div><div id="cmprev" class="muted num" style="margin-top:6px;font-size:13px"></div>';
+  g.insertAdjacentElement('afterend',d);n.setAttribute('autocomplete','off')}
+document.addEventListener('input',e=>{const t=e.target;if(!t||!t.id)return;
+  if(t.id==='ccn'){cmUi();cmSearch(t.value)}
+  else if(t.id==='ccg')cmScale();
+  else if(t.id==='cck'||t.id==='ccp'||t.id==='ccc'||t.id==='ccf'){const k=$('#cck');if(k)k.dataset.auto=''}});
 function authUi(){const e=document.getElementById('a_email'),p=document.getElementById('a_pw');
   [e,p].forEach(i=>{if(i){i.setAttribute('autocapitalize','none');i.setAttribute('autocorrect','off');i.setAttribute('spellcheck','false')}});
   if(p&&!document.querySelector('[data-act="pwshow"]')){const b=document.createElement('button');b.type='button';b.className='linkbtn';b.setAttribute('data-act','pwshow');b.textContent=_('إظهار الباسورد');p.insertAdjacentElement('afterend',b)}}
 (function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{recUi()}catch(e){}try{authUi()}catch(e){}try{pwUi()}catch(e){}try{chatAll()}catch(e){}return x}})();
-(function(){const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{pwUi();chatAll()}catch(e){}return x}})();
+(function(){const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{pwUi();chatAll();cmUi()}catch(e){}return x}})();
 (function(){const a=renderLayer;renderLayer=function(){const x=a.apply(this,arguments);try{chatAll()}catch(e){}return x}})();
 function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];closeClient()}
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
@@ -1576,7 +1654,7 @@ function vPlanEditor(){
   h+=_('<div class="muted" style="margin:14px 0 6px">أضف صنف في وجبة:</div>')+chips(MEALS.map(m=>[m,_(m)]),mealNow,'cmeal')
     +_('<div class="row" style="margin:10px 0"><label class="f" for="cfq" style="margin:0">الكمية (جم أو مل)</label><input id="cfq" inputmode="decimal" value="')+esc(U.cc.fqty||'100')+'" style="max-width:100px"></div>'
     +_('<input id="cfsearch" placeholder="دوّر على أكلة أو مشروب" aria-label="بحث" value="')+esc(U.cc.fq||'')+'" style="margin-bottom:8px">'+chips(CATS.filter(c=>!['fav','mine'].includes(c[0])).map(c=>[c[0],_(c[1])]),U.cc.fcat||'all','ccat')+'<div id="cflist" class="flist">'+cfList(U.cc.fq)+'</div><div id="cfoff"></div>'
-    +_('<div class="card" style="margin-top:12px"><h3>صنف مخصص</h3><div class="grid2"><div><label class="f" for="ccn">الاسم</label><input id="ccn"></div><div><label class="f" for="cck">سعرات</label><input id="cck" inputmode="numeric"></div><div><label class="f" for="ccp">بروتين</label><input id="ccp" inputmode="decimal"></div><div><label class="f" for="ccc">كارب</label><input id="ccc" inputmode="decimal"></div><div><label class="f" for="ccf">دهون</label><input id="ccf" inputmode="decimal"></div></div><button class="btn alt block" style="margin-top:10px" data-act="cmadd">أضف للخطة</button></div></div>');
+    +'<div class="card" style="margin-top:12px"><h3>'+_('صنف مخصص')+'</h3>'+ccBoxHtml()+'</div></div>';
   h+=_('<div class="card"><h3>رسالة للعميل</h3><textarea id="cf_note" data-cf="note" placeholder="بتظهر في صفحته الرئيسية" aria-label="رسالة للعميل">')+esc(e.note||'')+'</textarea></div>';
   h+=_('<button class="btn block" data-act="cplansave" style="margin:12px 0 6px">حفظ الخطة وإرسالها للعميل</button><button class="btn line block" data-act="cplancancel">إلغاء</button>');
   return h;
@@ -1910,6 +1988,7 @@ document.addEventListener('click',function(ev){
    case 'delw':S.workouts=S.workouts.filter(w=>w.id!==d.id);save();render();break;
    case 'meal':U.meal=d.v;render();break;
    case 'offadd':{const f=(U.off||[])[+d.i];if(f){U.fs={food:f,g:100,qty:1,meal:U.meal};U.modal='food';renderLayer()}break}
+   case 'ccpick':{const f=(U.ccs||[])[+d.i];if(f){ccFill(f);const n=$('#ccn');if(n)n.value=fName(f)}break}
    case 'cfpick':{const f=(U.cfs||[])[+d.i];if(f){cfFill(f);const n=$('#cn');if(n)n.value=fName(f)}break}
    case 'cfoffadd':{const f=(U.cfo||[])[+d.i];if(!f)break;const g=pf($('#cfq')&&$('#cfq').value)||100;U.cc.fqty=String(g);const x=calcFood(f,g);U.cc.edit.meals.push({id:uid(),meal:U.cc.meal||'فطار',name:f.n,g,u:f.u,k:x.k,p:x.p,c:x.c,f:x.f});renderCoachApp();toast(_('اتضافت'));break}
    case 'foodsheet':{const f=findFood(d.n);if(f){U.fs={food:f,g:f.u==='ml'?250:100,qty:1,meal:U.meal};U.modal='food';renderLayer()}break}
@@ -2014,7 +2093,8 @@ document.addEventListener('click',function(ev){
    case 'cmeal':U.cc.meal=d.v;renderCoachApp();break;
    case 'cmdel':U.cc.edit.meals=U.cc.edit.meals.filter(x=>x.id!==d.id);renderCoachApp();break;
    case 'cfood':{const f=findFood(d.n);if(!f)break;const g=pf($('#cfq')&&$('#cfq').value)||100;U.cc.fqty=String(g);const x=calcFood(f,g);U.cc.edit.meals.push({id:uid(),meal:U.cc.meal||'فطار',name:f.n,fid:f.n,g,u:f.u,k:x.k,p:x.p,c:x.c,f:x.f});renderCoachApp();toast(_('اتضافت'));break}
-   case 'cmadd':{const n=($('#ccn').value||'').trim(),k=parseFloat($('#cck').value);if(!n||!(k>=0)){toast(_('اكتب الاسم والسعرات'));break}U.cc.edit.meals.push({id:uid(),meal:U.cc.meal||'فطار',name:n,k:Math.round(k),p:parseFloat($('#ccp').value)||0,c:parseFloat($('#ccc').value)||0,f:parseFloat($('#ccf').value)||0});renderCoachApp();break}
+   case 'cmadd':{const n=($('#ccn').value||'').trim(),k=parseFloat($('#cck').value);if(!n||!(k>=0)){toast(_('اكتب الاسم والسعرات'));break}const g=pf($('#ccg').value)||100,u=$('#ccu').value==='ml'?'ml':'g',r=g/100,r1=v=>Math.round(v*10)/10,P=id=>parseFloat($('#'+id).value)||0;U.cc.edit.meals.push({id:uid(),meal:U.cc.meal||'فطار',name:n,g,u,k:Math.round(k*r),p:r1(P('ccp')*r),c:r1(P('ccc')*r),f:r1(P('ccf')*r),b:{k:Math.round(k),p:P('ccp'),c:P('ccc'),f:P('ccf')}});renderCoachApp();break}
+   case 'cmpick':{const f=(U.cms||[])[+d.i];if(f){cmFill(f);const n=$('#ccn');if(n)n.value=fName(f)}break}
    case 'logplan':{const pl=activePlan(),x=((pl&&pl.meals)||[]).find(y=>y.id===d.id);if(x){const e=planItemMeal(x);addMeal(e,e.meal);toast(_('اتسجّل'))}break}
    case 'logplanmeal':{const pl=activePlan(),k=dkey();((pl&&pl.meals)||[]).filter(y=>y.meal===d.v).forEach(x=>(S.meals[k]=S.meals[k]||[]).push(planItemMeal(x)));save();render();toast(_('اتسجّلت الوجبة'));break}
    case 'editmeal':{const k=dkey(),x=dayMeals(k).find(y=>y.id===d.id);if(x){U.em={id:x.id,date:k,name:mealName(x),orig:mealName(x),g:x.g||0,u:x.u||'g',b:x.b||null,fid:x.fid||'',k:x.k,p:x.p,c:x.c,f:x.f,meal:x.meal};U.modal='editmeal';renderLayer()}break}
@@ -2044,6 +2124,9 @@ document.addEventListener('input',function(ev){
   if(t.id==='cfq'){U.cc.fqty=t.value;const L=$('#cflist');if(L)L.innerHTML=cfList(U.cc.fq);const O=$('#cfoff');if(O&&(U.cfo||[]).length)O.innerHTML='<div class="muted" style="padding:10px 0 2px;font-size:12px">'+_('نتايج من قاعدة الأكل العالمية (تقريبية)')+'</div>'+cfPlanRows(U.cfo,'cfoffadd',true);return}
   if(t.dataset.ek&&U.ew){U.ew.exercises[+t.dataset.ei].sets[+t.dataset.ej][t.dataset.ek]=t.value;return}
   if(t.id==='cn'){cfSearch(t.value);return}
+  if(t.id==='ccn'){ccSearch(t.value);return}
+  if(t.id==='cck'||t.id==='ccp'||t.id==='ccc'||t.id==='ccf'){const k=$('#cck');if(k)k.dataset.auto='';ccPrev();return}
+  if(t.id==='ccg'){ccPrev();return}
   if(t.id==='ck'||t.id==='cp'||t.id==='cc'||t.id==='cf'||t.id==='cg'){const k=$('#ck');if(k&&t.id!=='cg')k.dataset.auto='';cfPrev();return}
   if(t.id==='fsearch'){U.fq=t.value;$('#flist').innerHTML=foodList(t.value);offSearch(t.value);return}
   if(t.id==='fg'&&U.fs){U.fs.g=pf(t.value)||0;const c=$('#fcalc');if(c)c.innerHTML=foodCalcHtml();return}
