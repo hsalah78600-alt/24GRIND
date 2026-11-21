@@ -1478,6 +1478,7 @@ async function aiSend(txt){
       const j=await r.json().catch(()=>({}));
       if(r.ok&&j.reply)out=j.reply;
       else{err=true;out=j.error==='quota'?_('المساعد وصل للحد اليومي المجاني النهارده. جرب تاني بكرة.'):j.error==='user-limit'?_('وصلت للحد اليومي بتاعك من الرسايل. كمّل بكرة.'):r.status===503?_('المساعد لسه مش متفعّل.'):_('حصلت مشكلة، جرب تاني.')}
+        if(isAdminUser()&&r.status!==429)out+=' ['+r.status+' '+(j.error||'')+(j.d?': '+j.d:'')+']'
     }
   }catch(e){err=true;out=_('مفيش اتصال دلوقتي، جرب تاني.')}
   A.busy=false;A.msgs.push({r:'a',t:out,e:err?1:0});aiSave();
