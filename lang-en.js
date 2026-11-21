@@ -771,6 +771,8 @@ window.EN={
 "كروس أوفر كابل": "Cable crossover",
 "كل بياناتك محفوظة. كلّم الإدارة تجدّد اشتراكك وترجع زي ما كنت.": "All your data is saved. Contact the admin to renew your subscription and pick up where you left off.",
 "كل بياناتك محفوظة. كلّم مدربك يجدّد اشتراكك وترجع زي ما كنت.": "All your data is saved. Ask your coach to renew your subscription and pick up where you left off.",
+"كلّم الإدارة مباشرة": "Contact the admin directly",
+"كلّم مدربك مباشرة": "Contact your coach directly",
 "كلّم مدربك يجدّد اشتراكك قبل ما حسابك يتقفل. بياناتك كلها محفوظة.": "Ask your coach to renew before your account locks. All your data is saved.",
 "كودي": "My code",
 "كويس": "Good",
