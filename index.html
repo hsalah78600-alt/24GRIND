@@ -1240,6 +1240,37 @@ function ccBoxHtml(){
    +fld('cck',_('سعرات / 100'))+fld('ccp',_('بروتين / 100'))+fld('ccc',_('كارب / 100'))+fld('ccf',_('دهون / 100'))
    +'</div><div id="ccmsg" class="muted" style="margin-top:8px"></div><div id="ccsug"></div><div class="row" style="margin:10px 0 0;align-items:center"><label class="f" for="ccg" style="margin:0">'+_('حجم الكمية (جم / مل)')+'</label><input id="ccg" inputmode="decimal" value="100" style="max-width:100px"></div><div id="ccprev" class="muted num" style="margin-top:8px"></div><button class="btn alt block" style="margin-top:10px" data-act="cmadd">'+_('أضف للخطة')+'</button>';
 }
+
+/* ---- reply to a message ---- */
+(function(){const st=document.createElement('style');st.textContent='.bmeta{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;opacity:.78;margin-top:4px}.rbtn{background:transparent;border:0;color:inherit;font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:6px}.rbtn:hover{background:rgba(127,127,127,.22)}.quote{border-inline-start:3px solid var(--flame);background:rgba(127,127,127,.16);padding:4px 8px;border-radius:6px;margin-bottom:6px;font-size:12px;cursor:pointer;display:flex;flex-direction:column;white-space:normal}.quote b{font-size:11px}.bub.a .quote b{color:var(--flame)}.quote span{opacity:.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.replybar{display:flex;align-items:center;gap:8px;margin-top:10px;padding:6px 10px;background:var(--surface2);border-inline-start:3px solid var(--flame);border-radius:8px;font-size:13px}.replybar .rq{flex:1;min-width:0;display:flex;flex-direction:column}.replybar .rq b{font-size:12px;color:var(--flame)}.replybar .rq span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.bub.flash{outline:2px solid var(--flame)}';document.head.appendChild(st)})();
+function roleLbl(f,me){return f===me?_('أنت'):(f==='coach'?_('المدرب'):(f==='admin'?_('الإدارة'):_('العميل')))}
+function quoteHtml(m,me){
+  const r=m&&m.re;if(!r||typeof r!=='object')return '';
+  return '<div class="quote" data-act="gotoq" data-q="'+esc(String(r.id||'').slice(0,40))+'"><b>'+esc(roleLbl(r.from,me))+'</b><span>'+esc(String(r.txt||'').slice(0,140))+'</span></div>';
+}
+function replyTo(d){
+  const b=document.querySelector('.bub[data-id="'+String(d.id).replace(/["\\]/g,'')+'"]');if(!b)return;
+  const box=b.closest('.msgs'),I=box&&chatInfo(box);if(!I||!I.th)return;
+  const c=b.cloneNode(true);[].slice.call(c.querySelectorAll('.quote,.bmeta,audio,img')).forEach(x=>x.remove());
+  let snip=(c.textContent||'').trim().slice(0,140);
+  if(!snip)snip=b.querySelector('img.mimg')?'📷 '+_('صورة'):(b.querySelector('audio')?'🎤 '+_('رسالة صوتية'):'');
+  U.reply={id:b.dataset.id,from:b.dataset.f,snip,th:I.th,box:box.id,me:I.me};
+  replyUi();const inp=document.getElementById('cmsg');if(inp)inp.focus();
+}
+function replyUi(){
+  document.querySelectorAll('.replybar').forEach(x=>x.remove());
+  const R=U.reply;if(!R)return;
+  const box=document.getElementById(R.box);if(!box){U.reply=null;return}
+  const comp=box.parentNode.querySelector('.composer');if(!comp)return;
+  const bar=document.createElement('div');bar.className='replybar';
+  bar.innerHTML='<div class="rq"><b>'+esc(roleLbl(R.from,R.me))+'</b><span>'+esc(R.snip)+'</span></div><button type="button" class="x" data-act="replycancel" aria-label="'+esc(_('إلغاء الرد'))+'">✕</button>';
+  comp.parentNode.insertBefore(bar,comp);
+}
+function gotoQuote(d){
+  const b=document.querySelector('.bub[data-id="'+String(d.q||'').replace(/["\\]/g,'')+'"]');if(!b)return;
+  const box=b.closest('.msgs');if(box)box.scrollTop+=b.getBoundingClientRect().top-box.getBoundingClientRect().top-8;
+  b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),1400);
+}
 function regSex(){
   return '<label class="f" for="a_sex">'+_('النوع')+'</label><select id="a_sex" style="margin-bottom:10px"><option value="">'+_('اختار النوع')+'</option><option value="m"'+(U.pSex==='m'?' selected':'')+'>'+_('ذكر')+'</option><option value="f"'+(U.pSex==='f'?' selected':'')+'>'+_('أنثى')+'</option></select>';
 }
@@ -1318,7 +1349,8 @@ function chatPos(el,mode){
 }
 function chatSet(el,list,me){if(!el)return;const first=!el.dataset.fx,nb=el.scrollHeight-el.scrollTop-el.clientHeight<80;
   el.innerHTML=msgsHtml(list,me);chatPos(el,first?'unread':(nb?'bottom':false))}
-function chatAll(){['msgs','cmsgs','amsgs'].forEach(id=>{const el=document.getElementById(id);if(el)el.dataset.fx?chatRead(el):chatPos(el,'unread')})}
+function chatAll(){try{replyUi()}catch(e){}
+  ['msgs','cmsgs','amsgs'].forEach(id=>{const el=document.getElementById(id);if(el)el.dataset.fx?chatRead(el):chatPos(el,'unread')})}
 window.addEventListener('scroll',()=>{['msgs','cmsgs','amsgs'].forEach(id=>chatRead(document.getElementById(id)))},{passive:true});
 document.addEventListener('visibilitychange',()=>{['msgs','cmsgs','amsgs'].forEach(id=>chatRead(document.getElementById(id)))});
 /* ---- password reset screen + change-password button ---- */
@@ -1388,7 +1420,7 @@ function stopWatchers(){C.unsubs.forEach(u=>{try{u()}catch(e){}});C.unsubs=[];cl
 function closeClient(){if(U.cc.unMsg){try{U.cc.unMsg()}catch(e){}U.cc.unMsg=null}}
 function msgsHtml(list,me){
   if(!list.length)return _('<div class="muted">لسه مفيش رسايل.</div>');
-  return list.map(m=>'<div class="bub '+(m.from===me?'u':'a')+'" data-f="'+esc(m.from||'')+'" data-ts="'+(+m.ts||0)+'">'+(safeImg(m.img)?'<img class="mimg" alt="" src="'+m.img+'">':'')+(safeAud(m.aud)?'<audio controls preload="none" src="'+m.aud+'"></audio>':'')+(m.txt?esc(m.txt):'')+'<div style="font-size:11px;opacity:.7;margin-top:4px">'+esc(ago(m.ts))+'</div></div>').join('');
+  return list.map(m=>'<div class="bub '+(m.from===me?'u':'a')+'" data-f="'+esc(m.from||'')+'" data-ts="'+(+m.ts||0)+'" data-id="'+esc(m.id||'')+'">'+quoteHtml(m,me)+(safeImg(m.img)?'<img class="mimg" alt="" src="'+m.img+'">':'')+(safeAud(m.aud)?'<audio controls preload="none" src="'+m.aud+'"></audio>':'')+(m.txt?esc(m.txt):'')+'<div class="bmeta"><span>'+esc(ago(m.ts))+'</span>'+(m.id?'<button type="button" class="rbtn" data-act="reply" data-id="'+esc(m.id)+'" aria-label="'+esc(_('رد'))+'">↩</button>':'')+'</div></div>').join('');
 }
 function updateMsgs(){chatSet($('#msgs'),C.msgs,'client')}
 
@@ -1527,7 +1559,9 @@ async function sendMsg(from,uid,media){
   if(media&&media.aud){msg.aud=media.aud;msg.dur=media.dur||0}
   const prev=txt||(media&&media.img?'📷':'🎤');
   try{
-    await CLOUD.sendMessage(uid,msg);
+    if(U.reply&&U.reply.th===uid&&U.reply.id)msg.re={id:String(U.reply.id).slice(0,40),from:U.reply.from,txt:String(U.reply.snip||'').slice(0,140)};
+    try{await CLOUD.sendMessage(uid,msg)}catch(e){if(!msg.re)throw e;delete msg.re;await CLOUD.sendMessage(uid,msg)}
+    if(U.reply&&U.reply.th===uid){U.reply=null;replyUi()}
     if(from==='client'){CLOUD.setProfile(uid,{lastMsg:{from:'client',txt:prev.slice(0,120),ts:msg.ts}}).catch(()=>{});pushNotify((C.profile&&C.profile.coachId)||(C.adminInfo&&C.adminInfo.uid),S.profile.name||'Forma',prev.slice(0,100),'msg')}
     else pushNotify(uid,(C.profile&&C.profile.name)||'Forma',prev.slice(0,100),'msg');
   }catch(e){toast(_('تعذر إرسال الرسالة'))}
@@ -2056,6 +2090,9 @@ document.addEventListener('click',function(ev){
    case 'authgo':doAuth();break;
    case 'authreset':U.authMode='reset';U.authErr='';U.resetMsg='';render();break;
    case 'resetsend':doReset();break;
+   case 'reply':replyTo(d);break;
+   case 'replycancel':U.reply=null;replyUi();break;
+   case 'gotoq':gotoQuote(d);break;
    case 'pwchange':{CLOUD.reset((C.user&&C.user.email)||'').then(()=>toast(_('بعتنالك لينك تغيير الباسورد على إيميلك'))).catch(()=>toast(_('تعذر الإرسال')));break}
    case 'pwshow':{const pw=$('#a_pw');if(pw){const sh=pw.type==='password';pw.type=sh?'text':'password';const b=document.querySelector('[data-act="pwshow"]');if(b)b.textContent=sh?_('إخفاء الباسورد'):_('إظهار الباسورد')}break}
    case 'signout':signOutNow();break;
