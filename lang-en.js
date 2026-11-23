@@ -1066,5 +1066,9 @@ window.EN={
 "مدربين اشتراكهم قرب يخلص": "Coaches expiring soon",
 "تأكيد": "Confirm",
 "ابحث عن مدرب بالاسم أو الإيميل أو الرقم": "Search coaches by name, email or number",
-"بحث في المدربين": "Search coaches"
+"بحث في المدربين": "Search coaches",
+"مثلا": "e.g.",
+"كمّل بياناتك": "Complete your details",
+"اكتب السن والطول والوزن عشان أهدافك اليومية تتحسب صح.": "Enter your age, height and weight so your daily targets are calculated correctly.",
+"كمّل دلوقتي": "Complete now"
 };
