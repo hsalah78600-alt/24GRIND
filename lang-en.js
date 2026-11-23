@@ -1063,5 +1063,8 @@ window.EN={
 "مساء الخير": "Good evening",
 "مدربك: ": "Your coach: ",
 "إجمالي العملاء على المنصة": "Total clients on the platform",
-"مدربين اشتراكهم قرب يخلص": "Coaches expiring soon"
+"مدربين اشتراكهم قرب يخلص": "Coaches expiring soon",
+"تأكيد": "Confirm",
+"ابحث عن مدرب بالاسم أو الإيميل أو الرقم": "Search coaches by name, email or number",
+"بحث في المدربين": "Search coaches"
 };

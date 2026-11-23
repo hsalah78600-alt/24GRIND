@@ -130,6 +130,9 @@ nav.tabs svg{width:22px;height:22px}
 @media (prefers-reduced-motion:no-preference){#splash i:after{animation:spl 1s ease-in-out infinite alternate}@keyframes spl{from{transform:translateX(-100%)}to{transform:translateX(250%)}}.btn,.tabs button,.item,.chip{transition:transform .12s,background-color .15s}.btn:active,.tabs button:active,.item:active{transform:scale(.97)}#main.pg{animation:pgin .22s ease-out}@keyframes pgin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}}
 .recbar[hidden],.recbar:empty{display:none}
 .greet{margin:2px 2px 12px}.greet b{font-size:20px}.cfrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}.cfrow::-webkit-scrollbar{display:none}.cfrow .btn{flex:0 0 auto;white-space:nowrap}.cfq{margin:4px 0 8px}
+.sk{background:linear-gradient(90deg,var(--line) 25%,transparent 50%,var(--line) 75%);background-size:200% 100%;border-radius:8px;opacity:.7}
+@media (prefers-reduced-motion:no-preference){.sk{animation:skl 1.2s linear infinite}@keyframes skl{from{background-position:200% 0}to{background-position:-200% 0}}}
+#cfmov{z-index:90}#cfmov .sheet{max-width:420px;margin:auto;text-align:center}#cfmov p{margin:6px 0 16px;line-height:1.7}#cfmov .row{gap:10px}#cfmov .row .btn{flex:1}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:40;max-width:90%}
 .modal{position:fixed;inset:0;background:rgba(5,8,16,.6);z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:560px;max-height:86%;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -1765,7 +1768,7 @@ function vClientDetail(){
   const c=U.cc.sel,d=U.cc.detail;
   let h=_('<button class="back" data-act="cback">← العملاء</button>');
   h+=contactCard(c,_('عميل'));h+=subCardHtml(c);
-  if(!d||d.loading)return h+_('<div class="card muted">جاري تحميل البيانات…</div>');
+  if(!d||d.loading)return h+'<div class="card" aria-busy="true"><div class="sk" style="height:56px;width:56px;border-radius:50%"></div><div class="sk" style="height:14px;width:45%;margin-top:14px"></div><div class="sk" style="height:12px;margin-top:12px"></div><div class="sk" style="height:12px;width:75%;margin-top:8px"></div></div><div class="card" aria-busy="true"><div class="sk" style="height:14px;width:35%"></div><div class="sk" style="height:90px;margin-top:14px"></div></div>';
   if(d.err)return h+_('<div class="card muted">تعذر تحميل بيانات العميل.</div>');
   const T=d.T,p=T.profile,t=targets(p,d.plan),s=c.summary||{};
   const exN=id=>(EXS.concat(T.customEx||[]).find(e=>e.id===id)||{n:id}).n;
@@ -2986,6 +2989,40 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||t.id!=='cfq')retur
   const soon=L.filter(c=>accState(c)==='active'&&daysLeft(effUntil(c))<=7).length;
   const strip='<div class="card" style="display:flex;gap:18px;flex-wrap:wrap"><div><div class="muted">'+esc(_('إجمالي العملاء على المنصة'))+'</div><b style="font-size:22px">'+tot+'</b></div><div><div class="muted">'+esc(_('مدربين اشتراكهم قرب يخلص'))+'</div><b style="font-size:22px">'+soon+'</b></div></div>';
   return h.replace('</h2>','</h2>'+strip)}})();
+
+/* ===== styled confirm dialogs (replaces native confirm) + admin coach search ===== */
+(function(){
+  let LAST=null,OK=null;
+  document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act]');if(b)LAST=b},true);
+  const nat=window.confirm.bind(window);
+  const DANGER=/تمسح|هتمسح|توقف|يتقفل|ينتهي فوراً/;
+  const close=()=>{const o=document.getElementById('cfmov');if(o)o.remove()};
+  window.confirm=function(msg){
+    if(OK!==null&&OK===msg){OK=null;return true}
+    if(!LAST||!document.body)return nat(msg);
+    const el=LAST;close();
+    const o=document.createElement('div');o.className='modal';o.id='cfmov';
+    o.innerHTML='<div class="sheet" role="alertdialog" aria-modal="true" aria-label="'+esc(_('تأكيد'))+'"><p>'+esc(msg)+'</p><div class="row"><button type="button" class="btn line" data-cfm="no">'+esc(_('إلغاء'))+'</button><button type="button" class="btn'+(DANGER.test(msg)?' danger':'')+'" data-cfm="ok">'+esc(_('تأكيد'))+'</button></div></div>';
+    o.addEventListener('click',ev=>{
+      const t=ev.target.closest('[data-cfm]');
+      if(!t&&ev.target!==o)return;
+      close();
+      if(t&&t.dataset.cfm==='ok'){OK=msg;
+        try{const tgt=document.contains(el)?el:document.querySelector('[data-act="'+el.dataset.act+'"]');if(tgt)tgt.click()}catch(e){}
+        setTimeout(()=>{OK=null},0)}
+    });
+    document.body.appendChild(o);const n=o.querySelector('[data-cfm="no"]');if(n)n.focus();
+    return false};
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+})();
+/* admin: coach search (DOM filter so typing never re-renders) */
+function admFilter(){const q=(U.admq||'').trim().toLowerCase();
+  document.querySelectorAll('#main .card').forEach(c=>{if(!c.querySelector('[data-act="achat"]'))return;c.style.display=(!q||c.textContent.toLowerCase().includes(q))?'':'none'})}
+(function(){const a0=vAdmin;vAdmin=function(){const h=a0.apply(this,arguments);
+  if(((C.coaches||[]).filter(c=>c.uid!==(C.user&&C.user.uid))).length<3)return h;
+  return h.replace('</h2>','</h2><input id="adq" class="cfq" type="search" autocomplete="off" maxlength="40" placeholder="'+esc(_('ابحث عن مدرب بالاسم أو الإيميل أو الرقم'))+'" aria-label="'+esc(_('بحث في المدربين'))+'" value="'+esc(U.admq||'')+'">')}})();
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='adq'){U.admq=e.target.value;admFilter()}});
+(function(){const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{if(document.getElementById('adq'))admFilter()}catch(e){}return x}})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
