@@ -1090,5 +1090,10 @@ window.EN={
 "اتلغت علامة الوجبة": "Meal unchecked",
 "الالتزام بخطة الأكل": "Meal-plan adherence",
 "خطة الأكل النهاردة": "Today's meal plan",
-"اللي أكله: ": "Ate: "
+"اللي أكله: ": "Ate: ",
+"إعدادات التطبيق": "App settings",
+"شكل التطبيق": "App appearance",
+"زي الموبايل": "Match my phone",
+"\"زي الموبايل\" يتبع إعداد جهازك (فاتح أو داكن) لوحده.": "\"Match my phone\" follows your device setting (light or dark) automatically.",
+"اللغة": "Language"
 };
