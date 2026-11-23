@@ -1,4 +1,4 @@
-/* Hassanfit cloud layer: Firebase Auth + Firestore, loaded from Google's CDN on demand.
+/* Forma cloud layer: Firebase Auth + Firestore, loaded from Google's CDN on demand.
    The app works offline and without an account; this file is only used for sign-in and coach sync. */
 const cfg = window.FIREBASE_CONFIG || {};
 const configured = !!(cfg.apiKey && cfg.projectId && !/PASTE|YOUR/i.test(cfg.apiKey + cfg.projectId));
@@ -26,6 +26,17 @@ function sdk() {
 
 const clean = o => JSON.parse(JSON.stringify(o)); /* Firestore rejects undefined values */
 
+/* يمسح كل مستندات مجموعة فرعية على دفعات */
+async function wipeSub(s, uid, name) {
+  const snap = await s.F.getDocs(s.F.collection(s.db, 'users', uid, name));
+  let batch = s.F.writeBatch(s.db), n = 0;
+  for (const d of snap.docs) {
+    batch.delete(d.ref); n++;
+    if (n === 400) { await batch.commit(); batch = s.F.writeBatch(s.db); n = 0; }
+  }
+  if (n) await batch.commit();
+}
+
 const Cloud = {
   configured,
 
@@ -48,6 +59,22 @@ const Cloud = {
   },
   async signOut() { const s = await sdk(); await s.A.signOut(s.auth); },
   async reset(email) { const s = await sdk(); await s.A.sendPasswordResetEmail(s.auth, email); },
+  /* تأكيد الباسورد قبل العمليات الحساسة (مسح الحساب) */
+  async reauth(pw) {
+    const s = await sdk();
+    const u = s.auth.currentUser;
+    if (!u) throw new Error('no-user');
+    await s.A.reauthenticateWithCredential(u, s.A.EmailAuthProvider.credential(u.email, pw));
+  },
+  /* مسح الحساب وكل بياناته نهائياً: المحادثات والخطة والبيانات والصور وبعدين الحساب نفسه */
+  async deleteAccount(uid, code) {
+    const s = await sdk();
+    for (const sub of ['data', 'plan', 'messages', 'photos']) await wipeSub(s, uid, sub);
+    try { await s.F.deleteDoc(s.F.doc(s.db, 'pushSubs', uid)); } catch (e) {}
+    if (code) { try { await s.F.deleteDoc(s.F.doc(s.db, 'coachCodes', code)); } catch (e) {} }
+    await s.F.deleteDoc(s.F.doc(s.db, 'users', uid));
+    await s.A.deleteUser(s.auth.currentUser);
+  },
 
   async profile(uid) {
     const s = await sdk();
@@ -98,6 +125,22 @@ const Cloud = {
     const out = {};
     snap.forEach(d => { out[d.id] = d.data(); });
     return out;
+  },
+
+  /* صور التقدم (قبل/بعد) */
+  async listPhotos(uid) {
+    const s = await sdk();
+    const snap = await s.F.getDocs(s.F.query(s.F.collection(s.db, 'users', uid, 'photos'), s.F.orderBy('ts')));
+    return snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+  },
+  async addPhoto(uid, obj) {
+    const s = await sdk();
+    const r = await s.F.addDoc(s.F.collection(s.db, 'users', uid, 'photos'), clean(obj));
+    return r.id;
+  },
+  async delPhoto(uid, id) {
+    const s = await sdk();
+    await s.F.deleteDoc(s.F.doc(s.db, 'users', uid, 'photos', id));
   },
 
   async getPlan(uid) {

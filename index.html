@@ -260,7 +260,7 @@ const MEALS=['فطار','غدا','عشا','سناكس'];
 const CARDIO=[['walk',_('مشي'),3.5],['run',_('جري'),9.8],['bike',_('عجلة'),7.5],['swim',_('سباحة'),6],['rope',_('نط حبل'),11],['ell',_('إليبتيكال'),5],['hike',_('مشي صاعد'),6],['hiit','HIIT',8],['foot',_('كرة قدم'),7.5],['yoga',_('يوجا'),2.5],['rowm',_('تجديف'),7]];
 const MS=[['chest',_('صدر')],['waist',_('وسط')],['hips',_('ورك')],['arm',_('دراع')],['thigh',_('فخذ')],['neck',_('رقبة')],['shoulder',_('كتف')]];
 const MOODS=[_('تعبان'),_('عادي'),_('كويس'),_('ممتاز')];
-const DEF_HABITS=['نمت 7 ساعات','مشيت 8000 خطوة','وصلت هدف البروتين','من غير سكر زيادة','إطالة 10 دقايق'];
+const DEF_HABITS=[{n:'ساعات النوم',t:'pick',u:'h',link:'sleep'},{n:'عدد الخطوات',t:'pick',u:'steps'},{n:'وصلت هدف البروتين',t:'check'},{n:'من غير سكر زيادة',t:'check'},{n:'إطالة ومرونة',t:'pick',u:'min'}];
 const TIPS=[_('النوم الكفاية بيبني العضل أكتر من أي مكمل.'),_('زوّد الوزن أو العدّات شوية كل أسبوع، ده سر التقدم.'),_('البروتين موزع على اليوم أحسن من وجبة واحدة كبيرة.'),_('سخّن بمجموعة خفيفة قبل أول تمرين تقيل.'),_('المياه قبل التمرين وبعده، مش بس وقت العطش.'),_('الراحة بين المجموعات التقيلة من دقيقتين لتلاتة.')];
 
 const allEx=()=>EXS.concat(S_customEx());
@@ -272,7 +272,7 @@ const exName=id=>(exOf(id)||{n:id}).n;
 function defState(){return{v:2,wu:'ml',updated:0,tab:'home',sub:null,
   profile:{name:_('حسن'),sex:'m',age:25,height:175,weight:75,act:1.55,goal:'maintain',program:'ppl',rest:90,waterL:2.5,weekGoal:4,targetWeight:''},
   workouts:[],cardio:[],routines:[],customEx:[],meals:{},water:{},sleep:{},mood:{},weights:[],measures:[],
-  habits:{list:DEF_HABITS.map((n,i)=>({id:'h'+i,n})),log:{}},favFoods:[],customFoods:[],ach:{},settings:{theme:'auto'},active:null};}
+  habits:{list:DEF_HABITS.map((o,i)=>Object.assign({id:'h'+i},o)),log:{},val:{}},favFoods:[],customFoods:[],ach:{},settings:{theme:'auto'},active:null};}
 const pf=v=>parseFloat(String(v==null?'':v).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[,٫،]/g,'.'));
 function migWater(T){
   if(T.wu==='ml')return;
@@ -370,11 +370,11 @@ function buildChunks(){
 }
 function makeSummary(){
   const ws=weekStats(),si=streakInfo();
-  const dates=[...activeDates()].sort();
+  const dates=[...allActiveDates()].sort();
   let kc=0,nd=0;
   for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()-i);const t=dayTotals(dkey(d)).k;if(t){kc+=t;nd++}}
   return {ts:Date.now(),lastActive:dates[dates.length-1]||'',streak:si.n,weekN:ws.n,weekGoal:+S.profile.weekGoal||4,sex:S.profile.sex||'',weekVol:Math.round(ws.vol),
-    weight:S.weights.length?S.weights[S.weights.length-1].kg:S.profile.weight,kcalAvg:nd?Math.round(kc/nd):0,workouts:S.workouts.length,lastWorkout:S.workouts.length?{name:S.workouts[S.workouts.length-1].name||''}:null};
+    weight:S.weights.length?S.weights[S.weights.length-1].kg:S.profile.weight,kcalAvg:nd?Math.round(kc/nd):0,workouts:S.workouts.length,lastWorkout:S.workouts.length?{name:S.workouts[S.workouts.length-1].name||''}:null,adh:adherence(),today:todaySnap()};
 }
 function schedSync(){
   if(!C.user||!CLOUD||isCoach())return;
@@ -557,7 +557,7 @@ function vHome(){
   h+=_('<div class="card"><div class="row sp"><h3 style="margin:0">أكل النهاردة</h3><button class="btn alt sm" data-act="tab" data-v="food">سجّل أكل</button></div><div class="row sp" style="margin:10px 0 6px"><span class="num"><b style="font-size:22px">')+fmt(tot.k)+'</b> <span class="muted">/ '+fmt(t.kcal)+_(' سعر</span></span><span class="muted">بروتين ')+fmt(tot.p)+' / '+t.p+_(' جم</span></div><div class="bar"><i style="width:')+pct+'%"></i></div></div>';
   h+=waterCard(false);
   const hl=S.habits.list,hd=S.habits.log[k]||[];
-  if(hl.length)h+=_('<div class="card"><div class="row sp"><h3 style="margin:0">عادات النهاردة</h3><span class="muted num">')+hd.filter(x=>hl.some(y=>y.id===x)).length+' / '+hl.length+'</span></div><div class="row wrap" style="margin-top:10px">'+hl.map(x=>'<button class="chip'+(hd.includes(x.id)?' on':'')+'" data-act="habit" data-id="'+x.id+'">'+esc(_(x.n))+'</button>').join('')+'</div></div>';
+  if(hl.length)h+=_('<div class="card"><div class="row sp"><h3 style="margin:0">عادات النهاردة</h3><span class="muted num">')+hd.filter(x=>hl.some(y=>y.id===x)).length+' / '+hl.length+'</span></div><div class="row wrap" style="margin-top:10px">'+hl.map(habChip).join('')+'</div></div>';
   const last=S.workouts[S.workouts.length-1];
   if(last)h+=_('<div class="card"><div class="muted">آخر تمرين · ')+esc(fmtDate(last.date))+'</div><h3 style="margin:2px 0 10px">'+esc(last.name)+'</h3><div class="grid3"><div class="stat"><b>'+last.dur+_('</b><span>دقيقة</span></div><div class="stat"><b>')+last.sets+_('</b><span>مجموعة</span></div><div class="stat"><b>')+fmt(last.volume)+_('</b><span>كجم حجم</span></div></div></div>');
   const ach=Object.keys(S.ach).sort((a,b)=>S.ach[b]-S.ach[a])[0];
@@ -610,7 +610,7 @@ function vFood(){
   const R=52,C=2*Math.PI*R;const pct=Math.min(1,tot.k/t.kcal);
   let h=_('<h2>أكل النهاردة</h2><div class="card"><div class="row"><div class="ring"><svg width="132" height="132" viewBox="0 0 132 132"><circle cx="66" cy="66" r="')+R+'" fill="none" stroke="var(--surface2)" stroke-width="12"/><circle cx="66" cy="66" r="'+R+'" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+(C*(1-pct))+'"/></svg><div class="mid"><b class="num">'+fmt(Math.max(0,t.kcal-tot.k))+_('</b><span class="muted">باقي سعر</span></div></div><div class="grow">')+[[_('بروتين'),tot.p,t.p],[_('كارب'),tot.c,t.c],[_('دهون'),tot.f,t.f]].map(r=>'<div style="margin-bottom:9px"><div class="row sp muted"><span>'+r[0]+'</span><span class="num">'+fmt(r[1])+' / '+r[2]+_(' جم</span></div><div class="bar"><i style="width:')+Math.min(100,r[1]/Math.max(1,r[2])*100)+'%"></i></div></div>').join('')+'</div></div></div>';
   h+=waterCard(true);
-  h+=planMealsHtml()+_('<h2>أضف وجبة</h2>')+chips(MEALS.map(m=>[m,_(m)]),U.meal,'meal');
+  h+=planMealsHtml()+_('<h2>أضف وجبة</h2>')+chips(MEALS.map(m=>[m,_(m)]),U.meal,'meal');h+=foodTools();
   h+=_('<div class="card"><input id="fsearch" placeholder="دوّر على أكلة أو مشروب" aria-label="بحث عن أكل" value="')+esc(U.fq||'')+'" style="margin-bottom:10px">'+chips(CATS.map(c=>[c[0],_(c[1])]),U.fcat||'all','fcat')+'<div id="flist" class="flist">'+foodList(U.fq||'')+'</div><div id="foff"></div></div>';
   h+=_('<div class="card"><h3>صنف جديد</h3><div class="muted" style="margin:2px 0 10px">اكتب القيم لكل 100 جم (أو لكل 100 مل للمشروبات) وبعدها اختار الكمية بالجرام.</div><div class="grid2"><div><label class="f" for="cn">الاسم</label><input id="cn"></div><div><label class="f" for="cu">النوع</label><select id="cu"><option value="g">أكل (جم)</option><option value="ml">مشروب (مل)</option></select></div><div><label class="f" for="ck">سعرات / 100</label><input id="ck" inputmode="decimal"></div><div><label class="f" for="cp">بروتين / 100</label><input id="cp" inputmode="decimal"></div><div><label class="f" for="cc">كارب / 100</label><input id="cc" inputmode="decimal"></div><div><label class="f" for="cf">دهون / 100</label><input id="cf" inputmode="decimal"></div></div>')+cfBoxHtml()+_('<button class="btn block" style="margin-top:10px" data-act="savecustom">احفظ الصنف واختار الكمية</button></div>');
   h+=_('<div class="card"><h3>سجّل سعرات مباشرة</h3><div class="muted" style="margin:2px 0 10px">لو عارف إجمالي السعرات بس (مثلا من علبة المنتج).</div><div class="grid2"><div><label class="f" for="dn">الاسم</label><input id="dn"></div><div><label class="f" for="dk">سعرات</label><input id="dk" inputmode="decimal"></div><div><label class="f" for="dp">بروتين (جم)</label><input id="dp" inputmode="decimal"></div><div><label class="f" for="dc">كارب (جم)</label><input id="dc" inputmode="decimal"></div><div><label class="f" for="dfa">دهون (جم)</label><input id="dfa" inputmode="decimal"></div></div><button class="btn alt block" style="margin-top:10px" data-act="addcustom">أضف على ')+_(U.meal)+'</button></div>';
@@ -820,7 +820,12 @@ function accPill(p){
   return '<span class="pill'+(d>7?' good':'')+'">'+_('ساري لحد ')+fmtD(effUntil(p))+' · '+d+_n(d,' يوم')+'</span>';
 }
 function extBtns(id){
-  return '<div class="chips" style="margin:8px 0 0">'+[1,2,3].map(m=>'<button class="chip" data-act="ext" data-id="'+esc(id)+'" data-m="'+m+'">+ '+(m===1?_('شهر'):m===2?_('شهرين'):_('3 شهور'))+'</button>').join('')+'</div>';
+  const a=findAcct(id)||{},st=accState(a),needs=(st==='pending'||st==='expired');
+  let h='';
+  if(needs)h+='<button class="btn block" style="margin-top:10px" data-act="accept" data-id="'+esc(id)+'">✅ '+(st==='pending'?_('قبول الاشتراك وتفعيل الحساب'):_('قبول التجديد (شهر)'))+'</button>';
+  h+='<div class="muted" style="font-size:12px;margin-top:10px">'+_('تمديد بالشهور')+'</div><div class="chips" style="margin:4px 0 0">'+[1,2,3].map(m=>'<button class="chip" data-act="ext" data-id="'+esc(id)+'" data-m="'+m+'">+ '+(m===1?_('شهر'):m===2?_('شهرين'):_('3 شهور'))+'</button>').join('')+'</div>';
+  h+='<div class="dayctl" data-id="'+esc(id)+'"><div class="muted" style="font-size:12px;margin-top:10px">'+_('زيادة أو تقليل بالأيام')+'</div><div class="row" style="gap:6px;margin-top:4px"><input class="dayin" inputmode="numeric" maxlength="3" placeholder="'+esc(_('عدد الأيام'))+'" aria-label="'+esc(_('عدد الأيام'))+'" style="max-width:110px"><button class="btn sm" data-act="dadd" data-id="'+esc(id)+'">+ '+_('زوّد')+'</button><button class="btn line sm" data-act="dsub" data-id="'+esc(id)+'">− '+_('قلّل')+'</button></div></div>';
+  return h;
 }
 function subRow(c){
   const s=accState(c);if(s==='blocked')return '';
@@ -861,6 +866,7 @@ function vAdmin(){
   let h='<h2>'+_('المدربين')+'</h2>';
   if(!L.length)return h+'<div class="card muted">'+_('لسه مفيش مدربين مسجّلين.')+'</div>';
   const cnt=k=>L.filter(c=>accState(c)===k).length;
+  h+=adminTools(L);
   h+='<div class="grid3" style="margin-bottom:12px"><div class="stat"><b>'+L.length+'</b><span>'+_('مدرب')+'</span></div><div class="stat"><b>'+cnt('active')+'</b><span>'+_('فعّال')+'</span></div><div class="stat"><b>'+cnt('pending')+'</b><span>'+_('في الانتظار')+'</span></div></div>';
   const rank={pending:0,expired:1,active:2,blocked:3};
   L.slice().sort((a,b)=>(rank[accState(a)]-rank[accState(b)])||(effUntil(a)-effUntil(b))).forEach(c=>{
@@ -999,7 +1005,13 @@ async function sendImg(f,act){
   try{let a=await imgToData(f,1000,.65);if(a.length>300000)a=await imgToData(f,760,.5);if(a.length>340000)throw new Error('big');await sendMsg(T.from,T.uid,{img:a})}
   catch(e){toast(_('الصورة مش مناسبة أو كبيرة'))}
 }
-let REC=null,DRAFT=null;
+let REC=null,DRAFT=null,FIN=null;
+function sendOrRec(act){
+  if(REC&&REC.act===act){REC.autoSend=true;stopRec(false);return true}
+  if(FIN&&FIN.act===act){FIN.autoSend=true;return true}
+  if(DRAFT&&DRAFT.act===act){recSend();return true}
+  return false;
+}
 function encodeWav(parts,rate){
   let n=0;parts.forEach(a=>n+=a.length);const all=new Float32Array(n);let o=0;parts.forEach(a=>{all.set(a,o);o+=a.length});
   const R=8000,ratio=rate/R,len=Math.floor(n/ratio),pcm=new Int16Array(len);
@@ -1030,7 +1042,7 @@ function recUi(){
     el.hidden=false;
     if(st==='rec'){
       const sec=Math.floor((Date.now()-REC.t0)/1000),t=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
-      if(el.dataset.st!=='rec'){el.dataset.st='rec';el.innerHTML='<div class="row" style="gap:8px;margin-top:10px;align-items:center"><span style="color:#d92d20">●</span><b class="num rectime">'+t+'</b><span class="grow"></span><button class="btn rec sm" data-act="recstop">⏹ '+_('إيقاف التسجيل')+'</button><button class="btn line sm" data-act="miccancel">🗑 '+_('مسح')+'</button></div>'}
+      if(el.dataset.st!=='rec'){el.dataset.st='rec';el.innerHTML='<div class="row" style="gap:8px;margin-top:10px;align-items:center"><span style="color:#d92d20">●</span><b class="num rectime">'+t+'</b><span class="grow"></span><button class="btn sm" data-act="recstopsend">➤ '+_('أرسل')+'</button><button class="btn rec sm" data-act="recstop">⏹ '+_('إيقاف')+'</button><button class="btn line sm" data-act="miccancel">🗑 '+_('مسح')+'</button></div>'}
       else{const e2=el.querySelector('.rectime');if(e2)e2.textContent=t}
     }else if(el.dataset.st!=='draft'){
       el.dataset.st='draft';
@@ -1051,14 +1063,16 @@ function finishRec(R){
   const dur=Math.round((Date.now()-R.t0)/1000);
   if(dur<1||!R.chunks.length){recUi();toast(_('التسجيل قصير أوي'));return}
   const type=((R.mr.mimeType||R.mt||'audio/webm').split(';')[0]).toLowerCase();
+  FIN=R;
   const fr=new FileReader();
   fr.onload=()=>{
     const b64=String(fr.result||'').split(',')[1]||'';
     const url='data:'+type+';base64,'+b64;
-    if(!safeAud(url)||url.length>800000){recUi();toast(_('التسجيل طويل أو مش مدعوم'));return}
-    DRAFT={url,dur,act:R.act};recUi();
+    if(!safeAud(url)||url.length>800000){FIN=null;recUi();toast(_('التسجيل طويل أو مش مدعوم'));return}
+    DRAFT={url,dur,act:R.act};FIN=null;recUi();
+    if(R.autoSend)recSend();
   };
-  fr.onerror=()=>{recUi();toast(_('تعذر حفظ التسجيل'))};
+  fr.onerror=()=>{FIN=null;recUi();toast(_('تعذر حفظ التسجيل'))};
   fr.readAsDataURL(new Blob(R.chunks,{type}));
 }
 async function micToggle(act){
@@ -1449,27 +1463,42 @@ function aiMsgsHtml(){const A=aiSt();
   let h=A.msgs.map(m=>'<div class="aib '+(m.r==='u'?'u':'a')+'" data-id="'+esc(m.id||'')+'">'+(m.re?'<button class="aiq" data-act="aigo" data-id="'+esc(m.re.id||'')+'"><b>'+(m.re.r==='u'?_('أنت'):_('المساعد'))+'</b>: '+esc(m.re.t)+'</button>':'')+esc(m.t)+(m.id?'<button class="aire" data-act="airep" data-id="'+esc(m.id)+'" aria-label="'+_('رد')+'">↩</button>':'')+'</div>').join('');
   if(A.busy)h+='<div class="aib a" aria-live="polite">…</div>';
   return h}
-function aiRender(){const A=aiSt(),b=$('#aimsgs');if(!b)return;
+function aiRender(why){const A=aiSt(),b=$('#aimsgs');if(!b)return;
+  const near=b.scrollHeight-b.scrollTop-b.clientHeight<80,top=b.scrollTop;
   b.innerHTML=aiMsgsHtml();
   const q=$('#aiq');if(q)q.hidden=A.msgs.length>0;
   const s=$('#aisend');if(s)s.disabled=!!A.busy;
   const rb=$('#airb');if(rb)rb.innerHTML=A.reply?'<div class="aireplybar"><span>↩ '+_('رد على')+': '+esc(A.reply.t)+'</span><button class="x" data-act="aircancel" aria-label="'+_('إلغاء الرد')+'">✕</button></div>':'';
-  const last=b.lastElementChild;if(last&&last.scrollIntoView)last.scrollIntoView({block:'end'})}
+  aiScroll(why,near,top);}
+function aiScroll(why,near,top){
+  const b=$('#aimsgs');if(!b)return;
+  const last=b.lastElementChild;
+  if(why==='first'||why==='send'){b.scrollTop=b.scrollHeight}
+  else if(why==='reply'){
+    if(near&&last){const lastA=[...b.querySelectorAll('.aib.a')].pop();b.scrollTop=Math.max(0,(lastA||last).offsetTop-8)}
+    else b.scrollTop=top;
+  }else b.scrollTop=top;
+  aiDownBtn();
+}
+function aiDownBtn(){
+  const b=$('#aimsgs'),d=$('#aidown');if(!b||!d)return;
+  d.hidden=b.scrollHeight-b.scrollTop-b.clientHeight<80;
+}
 function vAi(){
   if(!C.user)return '<div class="card muted">'+_('سجّل دخول بحسابك عشان تستخدم المساعد الذكي.')+'</div>';
   const A=aiSt();
   return '<div class="card muted" style="font-size:.92em">'+(isAdminUser()?_('مساعد الإدارة: بيجاوب على أي سؤال عن التطبيق وتشغيله وكمان التغذية والتمارين وبيانات عملائك.'):isCoach()?_('مساعد المدرب: تغذية وتمارين وبدائل بنفس الماكروز وسعرات، ومتابعة عملائك.'):_('مساعد ذكي بيجاوب على أسئلة التمرين والأكل بناءً على بياناتك. مش بديل عن مدربك ولا عن الدكتور.'))+'</div>'+
-   '<div id="aimsgs" class="aimsgs">'+aiMsgsHtml()+'</div>'+
+   '<div class="aiwrap"><div id="aimsgs" class="aimsgs">'+aiMsgsHtml()+'</div><button id="aidown" class="aidown" data-act="aidown" hidden aria-label="'+_('انزل لآخر رسالة')+'">⬇</button></div>'+
    '<div class="chips" id="aiq"'+(A.msgs.length?' hidden':'')+'>'+aiQs().map((q,i)=>'<button class="chip" data-act="aiq" data-i="'+i+'">'+esc(q)+'</button>').join('')+'</div>'+
    '<div id="airb"></div><div class="row aibar"><textarea id="aiin" rows="1" maxlength="500" placeholder="'+_('اكتب سؤالك هنا')+'" aria-label="'+_('اكتب سؤالك هنا')+'"></textarea><button class="btn" id="aisend" data-act="aisend"'+(A.busy?' disabled':'')+'>'+_('إرسال')+'</button></div>'+
    (A.msgs.length?'<button class="linkbtn" data-act="aiclear" style="margin-top:10px">'+_('مسح المحادثة')+'</button>':'')+
-   '<style>.aimsgs{display:flex;flex-direction:column;gap:8px;margin:10px 0}.aib{max-width:88%;padding:10px 12px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}.aib.u{align-self:flex-end;background:var(--accent);color:var(--accent-fg)}.aib.a{align-self:flex-start;background:var(--surface);border:1px solid var(--line)}.aibar{align-items:flex-end;gap:8px;margin-top:8px}#aiq[hidden]{display:none}html[dir=rtl] .aib.u{align-self:flex-start}html[dir=rtl] .aib.a{align-self:flex-end}.aibar textarea{flex:1;resize:none;min-height:44px;max-height:120px;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg)}</style>';
+   '<style>.aiwrap{position:relative}.aimsgs{display:flex;flex-direction:column;gap:8px;margin:10px 0;position:relative;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);min-height:140px;padding:2px 2px 6px;scroll-behavior:auto}.aidown{position:absolute;inset-inline-end:10px;bottom:16px;width:40px;height:40px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-fg);font-size:18px;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;z-index:3}.aidown[hidden]{display:none}.aib{max-width:88%;padding:10px 12px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}.aib.u{align-self:flex-end;background:var(--accent);color:var(--accent-fg)}.aib.a{align-self:flex-start;background:var(--surface);border:1px solid var(--line)}.aibar{align-items:flex-end;gap:8px;margin-top:8px}#aiq[hidden]{display:none}html[dir=rtl] .aib.u{align-self:flex-start}html[dir=rtl] .aib.a{align-self:flex-end}.aibar textarea{flex:1;resize:none;min-height:44px;max-height:120px;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg)}</style>';
 }
 async function aiSend(txt){
   const A=aiSt();txt=String(txt||'').trim().slice(0,500);if(!txt||A.busy)return;
   const inp=$('#aiin');if(inp)inp.value='';
   const re=A.reply?{id:A.reply.id,t:A.reply.t,r:A.reply.r}:null;A.reply=null;
-  A.msgs.push({r:'u',t:txt,id:'m'+Date.now(),re});A.busy=true;aiRender();
+  A.msgs.push({r:'u',t:txt,id:'m'+Date.now(),re});A.busy=true;aiRender('send');
   let out='',err=false;
   try{
     const tok=await CLOUD.idToken();
@@ -1484,7 +1513,7 @@ async function aiSend(txt){
     }
   }catch(e){err=true;out=_('مفيش اتصال دلوقتي، جرب تاني.')}
   A.busy=false;A.msgs.push({r:'a',t:out,e:err?1:0,id:'m'+Date.now()});aiSave();
-  if($('#aimsgs'))aiRender();
+  if($('#aimsgs'))aiRender('reply');
 }
 document.addEventListener('keydown',e=>{const t=e.target;if(t&&t.id==='aiin'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();aiSend(t.value)}});
 (function(){const a=vHome;vHome=function(){const x=a.apply(this,arguments);
@@ -1492,7 +1521,7 @@ document.addEventListener('keydown',e=>{const t=e.target;if(t&&t.id==='aiin'&&e.
   return x+'<div class="card"><div class="row sp"><div class="grow"><h3 style="margin:0">'+_('المساعد الذكي')+'</h3><div class="muted">'+_('اسأل عن تمرينك وأكلك')+'</div></div><button class="btn alt sm" data-act="aiopen">'+_('اسأل')+'</button></div></div>'}})();
 
 function aiReply(id){const A=aiSt(),m=A.msgs.find(x=>x.id===id);if(!m)return;
-  A.reply={id:m.id,t:String(m.t).replace(/\s+/g,' ').slice(0,120),r:m.r};aiRender();const i=$('#aiin');if(i)i.focus()}
+  A.reply={id:m.id,t:String(m.t).replace(/\s+/g,' ').slice(0,120),r:m.r};aiRender('keep');const i=$('#aiin');if(i)i.focus()}
 function aiGo(id){const b=document.querySelector('.aib[data-id="'+String(id||'').replace(/["\\]/g,'')+'"]');if(!b)return;
   b.scrollIntoView({block:'center'});b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),1400)}
 /* ----- unread marks on cards/tabs, subscription line, AI tab scroll ----- */
@@ -1518,7 +1547,8 @@ function navBadges(){
 (function(){const a=ntCoach;ntCoach=function(){const x=a.apply(this,arguments);try{navBadges()}catch(e){}return x}})();
 (function(){const a=ntAdmin;ntAdmin=function(){const x=a.apply(this,arguments);try{navBadges()}catch(e){}return x}})();
 (function(){const a=updateMsgs;updateMsgs=function(){const x=a.apply(this,arguments);try{navBadges()}catch(e){}return x}})();
-function aiAfter(){if($('#aimsgs')){if(!U.aiShown){U.aiShown=true;aiRender()}}else U.aiShown=false}
+function aiAfter(){if($('#aimsgs')){const b=$('#aimsgs');if(!U.aiShown){U.aiShown=true;aiRender('first')}else if(U.aiTop!=null){b.scrollTop=U.aiTop}
+  if(!b.dataset.sc){b.dataset.sc='1';b.addEventListener('scroll',()=>{U.aiTop=b.scrollTop;aiDownBtn()},{passive:true})}}else U.aiShown=false}
 
 function gateContact(){
   const ph=isCoach()?(C.adminInfo&&C.adminInfo.phone):(C.coach&&C.coach.phone);
@@ -1538,8 +1568,7 @@ function homeNotice(){
   if(CLOUD&&CLOUD.configured){
     if(!C.user)h+=_('<div class="card"><h3>اربط مدربك</h3><div class="muted" style="margin-bottom:10px">سجّل حساب واكتب كود مدربك عشان يتابع معاك تمارينك وأكلك.</div><button class="btn block" data-act="tab" data-v="coach">ابدأ</button></div>');
     else if(C.profile&&C.profile.coachId){
-      const ls=S.lastSync?dkey(new Date(S.lastSync)):'';
-      if(ls!==dkey())h+=_('<div class="card"><h3>ابعت بياناتك النهاردة</h3><div class="muted" style="margin-bottom:10px">مدربك بيتابع معاك. اضغط عشان بياناتك توصله.</div><button class="btn block" data-act="syncnow">ابعت دلوقتي</button></div>');
+      if(sync.st==='err')h+='<div class="card" style="border:1px solid var(--danger)"><h3 style="margin:0 0 4px">'+_('البيانات لسه ما اتبعتتش')+'</h3><div class="muted" style="margin-bottom:10px">'+_('هيحاول يبعتها لوحده أول ما النت يرجع. وتقدر تجرّب دلوقتي.')+'</div><button class="btn block" data-act="syncnow">'+_('ابعت دلوقتي')+'</button></div>';
     }
   }
   return h;
@@ -1555,11 +1584,11 @@ function vAuth(){
   }
   h+=_('<label class="f" for="a_email">الإيميل</label><input id="a_email" type="email" autocomplete="email" inputmode="email" style="direction:ltr;margin-bottom:10px">')+
      _('<label class="f" for="a_pw">الباسورد</label><input id="a_pw" type="password" autocomplete="')+(up?'new-password':'current-password')+'" style="direction:ltr">';
-  if(up)h+='<label class="row" style="margin-top:12px;align-items:flex-start"><input type="checkbox" id="a_consent"><span class="muted">'+(U.signRole==='coach'?_('أتعهد بالحفاظ على سرية بيانات عملائي واستخدامها لمتابعتهم بس.'):_('أوافق إن مدربي يشوف تمارينى وأكلي ووزني وقياساتي ونومي وعاداتي.'))+'</span></label>';
+  if(up)h+='<label class="row" style="margin-top:12px;align-items:flex-start"><input type="checkbox" id="a_consent"><span class="muted">'+(U.signRole==='coach'?_('أتعهد بالحفاظ على سرية بيانات عملائي واستخدامها لمتابعتهم بس.'):_('أوافق إن مدربي يشوف تمارينى وأكلي ووزني وقياساتي ونومي وعاداتي.'))+'</span></label><button class="linkbtn" data-act="legal">'+_('اقرا الشروط وسياسة الخصوصية')+'</button>';
   if(U.authErr)h+='<div style="color:var(--danger);margin-top:10px">'+esc(U.authErr)+'</div>';
   h+='<button class="btn block" style="margin-top:14px" data-act="authgo"'+(U.authBusy?' disabled':'')+'>'+(U.authBusy?_('ثواني…'):(up?_('إنشاء الحساب'):_('دخول')))+'</button>';
   if(!up)h+=_('<button class="linkbtn" data-act="authreset">نسيت الباسورد؟</button>');
-  return h+_('</div><div class="card muted">التطبيق بيشتغل كامل من غير حساب. الحساب بس عشان بياناتك تتحفظ ومدربك يتابعك.</div>');
+  return h+_('</div><div class="card muted">التطبيق بيشتغل كامل من غير حساب. الحساب بس عشان بياناتك تتحفظ ومدربك يتابعك.</div>')+'<button class="linkbtn" data-act="legal">'+_('الشروط وسياسة الخصوصية')+'</button>';
 }
 
 function vCoachTab(){
@@ -1700,13 +1729,14 @@ function vClients0(){
   const idleOf=c=>{const la=(c.summary||{}).lastActive;return la?Math.round((today-parseKey(la))/864e5):null};
   const need=L.filter(c=>{const d=idleOf(c);return d===null||d>=3}).length;
   h+='<div class="grid3" style="margin-bottom:12px"><div class="stat"><b>'+L.length+_('</b><span>عميل</span></div><div class="stat"><b>')+(L.length-need)+_('</b><span>نشطين</span></div><div class="stat"><b>')+need+_('</b><span>محتاج متابعة</span></div></div>');
+  h+=bcTools(L,idleOf);
   const GO={m:0,f:1,u:2};L.sort((a,b)=>GO[sexOf(a)]-GO[sexOf(b)]);
   const GC={m:0,f:0,u:0};L.forEach(x=>GC[sexOf(x)]++);let lastG=null;
   L.forEach(c=>{
     const g=sexOf(c);if(g!==lastG){lastG=g;h+='<h3 style="margin:16px 0 8px">'+(g==='m'?_('العملاء الذكور'):g==='f'?_('العميلات الإناث'):_('غير محدد'))+' ('+GC[g]+')</h3>'}
     const s=c.summary||{},idle=idleOf(c);
     const pill=idle===null?_('<span class="pill bad">لسه مبدأش</span>'):idle===0?_('<span class="pill good">نشط النهاردة</span>'):idle>=3?_('<span class="pill bad">من ')+idle+_n(idle,' يوم</span>'):_('<span class="pill">من ')+idle+_n(idle,' يوم</span>');
-    h+='<button class="card btnlike" data-act="copen" data-id="'+esc(c.uid)+'"><div class="row sp"><div class="row" style="gap:10px;align-items:center">'+avHtml(c,44)+'<div><b>'+esc(c.name||_('عميل'))+'</b>'+(c.phone?'<div class="ph" style="font-size:14px">'+esc(c.phone)+'</div>':'')+'</div></div>'+msgMark(c)+pill+_('</div><div class="muted num" style="margin-top:6px">أسبوع ')+(s.weekN||0)+' / '+(s.weekGoal||4)+_(' · سلسلة ')+(s.streak||0)+_(' · وزن ')+(s.weight||'—')+' · '+fmt(s.kcalAvg||0)+_(' سعر</div><div class="muted" style="font-size:12px;margin-top:2px">آخر مزامنة ')+(s.ts?esc(ago(s.ts)):'—')+'</div>'+subLine(c)+'</button>';
+    h+='<button class="card btnlike" data-act="copen" data-id="'+esc(c.uid)+'"><div class="row sp"><div class="row" style="gap:10px;align-items:center">'+avHtml(c,44)+'<div><b>'+esc(c.name||_('عميل'))+'</b>'+(c.phone?'<div class="ph" style="font-size:14px">'+esc(c.phone)+'</div>':'')+'</div></div>'+msgMark(c)+pill+_('</div><div class="muted num" style="margin-top:6px">أسبوع ')+(s.weekN||0)+' / '+(s.weekGoal||4)+_(' · سلسلة ')+(s.streak||0)+_(' · وزن ')+(s.weight||'—')+' · '+fmt(s.kcalAvg||0)+_(' سعر</div><div class="muted" style="font-size:12px;margin-top:2px">آخر مزامنة ')+(s.ts?esc(ago(s.ts)):'—')+'</div>'+subLine(c)+adhBar(c)+'</button>';
     h+=callRow(c);h+=subRow(c);
   });
   return h;
@@ -1731,7 +1761,7 @@ function vClientDetail(){
   if(!d.ok)h+=_('<div class="card muted">العميل لسه معملش مزامنة لبياناته.</div>');
   const wt=T.weights.length?T.weights[T.weights.length-1].kg:p.weight;
   h+='<div class="card"><div class="muted">'+(p.sex==='m'?_('ذكر'):_('أنثى'))+' · '+p.age+_(' سنة · ')+p.height+_(' سم · الهدف: ')+({cut:_('تنشيف'),maintain:_('ثبات'),bulk:_('تضخيم')}[p.goal]||'')+' · '+esc(p.program==='coach'&&d.plan&&d.plan.program?(_('برنامج المدرب: ')+(d.plan.program.name||'')):((PROGRAMS[p.program]||{}).n||''))+'</div><div class="grid3" style="margin-top:10px"><div class="stat"><b>'+wt+_('</b><span>وزن كجم</span></div><div class="stat"><b>')+(s.weekN||0)+' / '+(s.weekGoal||4)+_('</b><span>تمرين الأسبوع</span></div><div class="stat"><b>')+(s.streak||0)+_('</b><span>سلسلة</span></div></div><div class="muted" style="margin-top:8px">آخر مزامنة ')+(s.ts?esc(ago(s.ts)):'—')+'</div></div>';
-  h+=planSummary(c,d,t);
+  h+=planSummary(c,d,t);h+=draftCard(c.uid);
   h+=_('<div class="card"><div class="row sp"><h3 style="margin:0">الوزن</h3>')+(+p.targetWeight?_('<span class="muted">المستهدف ')+p.targetWeight+'</span>':'')+'</div>'+(T.weights.length>=2?line(T.weights.map(x=>({y:x.kg}))):_('<div class="muted" style="margin-top:6px">مفيش تسجيلات كفاية.</div>'))+'</div>';
   const days=[];for(let i=6;i>=0;i--){const dd=new Date();dd.setDate(dd.getDate()-i);days.push(dd)}
   const DN=[_('أحد'),_('اثنين'),_('ثلاثاء'),_('أربع'),_('خميس'),_('جمعة'),_('سبت')];
@@ -1746,8 +1776,10 @@ function vClientDetail(){
   const hl=T.habits.list||[];
   const hdone=hl.length?days.reduce((a,x)=>a+hl.filter(hh=>((T.habits.log[dkey(x)]||[]).includes(hh.id))).length,0)/(hl.length*7)*100:0;
   h+='<div class="card"><div class="grid3"><div class="stat"><b>'+(sl.length?f1(sl.reduce((a,b)=>a+b,0)/sl.length):'—')+_('</b><span>متوسط النوم</span></div><div class="stat"><b>')+Math.round(hdone)+_('%</b><span>التزام بالعادات</span></div><div class="stat"><b>')+(fL(T.water[dkey()]||0)+' / '+fL((+p.waterL>0?+p.waterL:2.5)*1000))+_('</b><span>مياه النهاردة (لتر)</span></div></div></div>');
+  h+=adhCard(c);
   const m=T.measures[T.measures.length-1];
   if(m)h+=_('<div class="card"><h3>آخر قياسات · ')+esc(fmtDate(m.date))+'</h3>'+MS.filter(f=>m[f[0]]).map(f=>'<div class="item"><div class="grow">'+f[1]+'</div><b class="num">'+m[f[0]]+_(' سم</b></div>')).join('')+'</div>';
+  h+=photosCoachCard(c);
   h+=_('<div class="card"><h3>رسايل مع ')+esc(c.name||_('العميل'))+'</h3><div class="stack msgs" id="cmsgs">'+msgsHtml(U.cc.msgs,'coach')+'</div>'+composerHtml('csend',_('اكتب رسالة أو ملاحظة'))+'</div>';
   return h;
 }
@@ -1770,7 +1802,8 @@ function vPlanEditor(){
   const c=U.cc.sel,d=U.cc.detail,e=U.cc.edit,p=d.T.profile,auto=targets(p,null),tg=e.targets||{};
   const exN=id=>(EXS.concat(d.T.customEx||[]).find(x=>x.id===id)||{n:id}).n;
   const inp=(path,ph,lab,val)=>{const id='cf_'+path.replace(/\./g,'_');return '<div><label class="f" for="'+id+'">'+lab+'</label><input id="'+id+'" inputmode="decimal" data-cf="'+path+'" placeholder="'+esc(ph)+'" value="'+esc(val==null?'':val)+'"></div>'};
-  let h=_('<button class="back" data-act="cplancancel">← رجوع بدون حفظ</button><h2 style="margin-top:4px">خطة ')+esc(c.name||_('العميل'))+'</h2>';
+  let h=_('<button class="back" data-act="cplanback">← رجوع (التعديلات محفوظة كمسودة)</button><h2 style="margin-top:4px">خطة ')+esc(c.name||_('العميل'))+'</h2>'+draftBanner(c.uid);
+  h+=aiPlanBox();
   h+=_('<div class="card"><h3>السعرات والماكروز والمياه</h3><div class="muted" style="margin:4px 0 10px">سيب الخانة فاضية والتطبيق يحسبها تلقائي (الحالي ')+fmt(auto.kcal)+_(' سعر).</div><div class="grid2">')
     +inp('targets.kcal',auto.kcal,_('سعرات يومية'),tg.kcal)+inp('targets.p',auto.p,_('بروتين (جم)'),tg.p)+inp('targets.c',auto.c,_('كارب (جم)'),tg.c)+inp('targets.f',auto.f,_('دهون (جم)'),tg.f)
     +inp('targets.waterL',p.waterL||2.5,_('مياه (لتر)'),tg.waterL)+inp('weekGoal',p.weekGoal||4,_('تمارين في الأسبوع'),e.weekGoal)+'</div></div>';
@@ -1814,7 +1847,7 @@ async function saveClientPlan(){
     if(days.length)plan.program={name:(pg.name||'').trim(),sets:num(pg.sets),days};
   }
   toast(_('جاري الحفظ…'));
-  try{await CLOUD.setPlan(c.uid,plan);U.cc.detail.plan=plan;U.cc.edit=null;renderCoachApp();window.scrollTo(0,0);toast(_('اتحفظت الخطة وهتظهر عند العميل'))}
+  try{await CLOUD.setPlan(c.uid,plan);U.cc.detail.plan=plan;U.cc.edit=null;dropDraft(c.uid);renderCoachApp();window.scrollTo(0,0);toast(_('اتحفظت الخطة وهتظهر عند العميل'))}
   catch(err){toast(_('تعذر حفظ الخطة. اتأكد إنك نشرت قواعد Firebase الجديدة'))}
 }
 function vMyCode(){
@@ -1824,7 +1857,7 @@ function vMyCode(){
   return _('<h2>كودك</h2><div class="card"><div class="muted" style="text-align:center">كود الدعوة</div><div class="code">')+esc(code)+'</div><div class="muted" style="margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere" id="invtxt">'+esc(msg)+_('</div><button class="btn block" data-act="copyinv">انسخ رسالة الدعوة</button></div><div class="card muted">العميل بيسجّل حساب ويكتب الكود مرة واحدة، وبعدها تمارينه وأكله بيظهروا لك في تبويب العملاء.</div>');
 }
 function vCoachAcct(){
-  return '<h2>'+_('حسابي')+'</h2>'+profCard()+adminSection()+'<div class="card"><button class="btn line block" data-act="signout">'+_('تسجيل خروج')+'</button></div>';
+  return '<h2>'+_('حسابي')+'</h2>'+profCard()+adminSection()+coachTools()+'<div class="card"><button class="btn line block" data-act="signout">'+_('تسجيل خروج')+'</button></div>';
 }
 
 /* ----- "more" hub and sub views ----- */
@@ -1860,15 +1893,15 @@ function vBody(){
 
 function vWell(){
   const k=dkey();const sl=S.sleep[k]||{};const mood=S.mood[k];
-  let h=_('<div class="card"><h3>نومك</h3><div class="row"><input id="slh" inputmode="decimal" placeholder="ساعات النوم" value="')+esc(sl.h||'')+_('" aria-label="ساعات النوم"><button class="btn" data-act="savesleep">سجّل</button></div><div class="chips" style="margin-top:10px">')+[1,2,3,4,5].map(q=>'<button class="chip'+(sl.q===q?' on':'')+'" data-act="sleepq" data-v="'+q+_('">جودة ')+q+'</button>').join('')+'</div>';
+  let h='<div class="card"><h3>'+_('نومك')+'</h3>'+sleepSelect(sl.h)+'<div class="chips" style="margin-top:10px">'+[1,2,3,4,5].map(q=>'<button class="chip'+(sl.q===q?' on':'')+'" data-act="sleepq" data-v="'+q+_('">جودة ')+q+'</button>').join('')+'</div>';
   const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d)}
   const DN=[_('أحد'),_('اثنين'),_('ثلاثاء'),_('أربع'),_('خميس'),_('جمعة'),_('سبت')];
   h+=bars(days.map(d=>(S.sleep[dkey(d)]||{}).h||0),days.map(d=>DN[d.getDay()]),6)+'</div>';
   h+=_('<div class="card"><h3>حالتك النهاردة</h3><div class="chips" style="margin:0">')+MOODS.map((m,i)=>'<button class="chip'+(mood===i+1?' on':'')+'" data-act="mood" data-v="'+(i+1)+'">'+m+'</button>').join('')+'</div></div>';
   const hl=S.habits.list,hd=S.habits.log[k]||[];
   h+=_('<div class="card"><h3>عاداتك</h3>')+(hl.length?hl.map(x=>{let c=0;for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()-i);if((S.habits.log[dkey(d)]||[]).includes(x.id))c++}
-    return '<div class="item"><button class="chk'+(hd.includes(x.id)?' on':'')+'" style="width:44px;flex:none" data-act="habit" data-id="'+x.id+'" aria-label="'+esc(_(x.n))+'">'+(hd.includes(x.id)?'✓':'')+'</button><div class="grow">'+esc(_(x.n))+'<div class="muted">'+c+_(' من 7 أيام</div></div><button class="x" data-act="delhabit" data-id="')+x.id+_('" aria-label="مسح">✕</button></div>')}).join(''):_('<div class="muted">ضيف عادة تتابعها كل يوم.</div>'))+
-   _('<div class="row" style="margin-top:10px"><input id="nh" placeholder="عادة جديدة" aria-label="عادة جديدة"><button class="btn sm" data-act="addhabit">أضف</button></div></div>');
+    return '<div class="item">'+habCtl(x,hd)+'<div class="grow">'+esc(_(x.n))+'<div class="muted">'+c+_(' من 7 أيام</div></div><button class="x" data-act="delhabit" data-id="')+x.id+_('" aria-label="مسح">✕</button></div>')}).join(''):_('<div class="muted">ضيف عادة تتابعها كل يوم.</div>'))+
+   habAddForm();
   return h;
 }
 
@@ -2030,6 +2063,7 @@ const IC={
 };
 const TABS=[['home',_('الرئيسية')],['train',_('تمرين')],['food',_('أكل')],['prog',_('تقدم')],['coach',_('مدربي')],['ai',_('المساعد')],['more',_('المزيد')]];
 function render(){
+  try{habMig(S)}catch(e){}
   {const g=gate();if(g){renderGate(g);return}}
   if(isCoach()){renderCoachApp();return}
   const views={home:vHome,train:vTrain,food:vFood,prog:vProg,coach:vCoachTab,ai:vAi,more:vMore};
@@ -2157,8 +2191,8 @@ document.addEventListener('click',function(ev){
    case 'wcustom':{const n=pf($('#wml').value);if(!(n>0)){toast(_('اكتب الكمية بالمل'));break}const k=dkey();S.water[k]=(S.water[k]||0)+Math.round(n);U.wlast=Math.round(n);save();render();break}
    case 'wundo':{const k=dkey(),n=U.wlast||250;S.water[k]=Math.max(0,(S.water[k]||0)-n);U.wlast=0;save();render();break}
    case 'habit':{const k=dkey();const l=S.habits.log[k]||[];const i=l.indexOf(d.id);if(i>=0)l.splice(i,1);else l.push(d.id);S.habits.log[k]=l;save();render();break}
-   case 'addhabit':{const n=$('#nh').value.trim();if(!n)break;S.habits.list.push({id:'h'+uid(),n});save();render();break}
-   case 'delhabit':S.habits.list=S.habits.list.filter(h=>h.id!==d.id);save();render();break;
+   case 'addhabit':{const n=$('#nh').value.trim().slice(0,40);if(!n)break;const pk=($('#nht')||{}).value==='pick';S.habits.list.push(pk?{id:'h'+uid(),n,t:'pick',u:($('#nhu')||{}).value||'n'}:{id:'h'+uid(),n,t:'check'});save();render();break}
+   case 'delhabit':S.habits.list=S.habits.list.filter(h=>h.id!==d.id);if(S.habits.val)Object.keys(S.habits.val).forEach(k=>{delete S.habits.val[k][d.id]});save();render();break;
    case 'savesleep':{const h=parseFloat($('#slh').value);if(!(h>0&&h<=24)){toast(_('اكتب عدد ساعات صحيح'));break}const k=dkey();S.sleep[k]=Object.assign({},S.sleep[k],{h});save();render();break}
    case 'sleepq':{const k=dkey();S.sleep[k]=Object.assign({h:0},S.sleep[k],{q:+d.v});save();render();break}
    case 'mood':S.mood[dkey()]=+d.v;save();render();break;
@@ -2203,12 +2237,13 @@ document.addEventListener('click',function(ev){
    case 'reply':replyTo(d);break;
    case 'replycancel':U.reply=null;replyUi();break;
    case 'gotoq':gotoQuote(d);break;
+   case 'aidown':{const b=$('#aimsgs');if(b){b.scrollTop=b.scrollHeight;U.aiTop=b.scrollTop;aiDownBtn()}break}
    case 'aisend':aiSend(($('#aiin')||{}).value);break;
    case 'aiq':aiSend(aiQs()[+d.i]);break;
    case 'aiclear':try{localStorage.removeItem(aiKey())}catch(e){}U.ai=null;render();break;
    case 'aiopen':S.tab='ai';S.sub=null;render();window.scrollTo(0,0);break;
    case 'airep':aiReply(d.id);break;
-   case 'aircancel':aiSt().reply=null;aiRender();break;
+   case 'aircancel':aiSt().reply=null;aiRender('keep');break;
    case 'aigo':aiGo(d.id);break;
    case 'pwchange':{CLOUD.reset((C.user&&C.user.email)||'').then(()=>toast(_('بعتنالك لينك تغيير الباسورد على إيميلك'))).catch(()=>toast(_('تعذر الإرسال')));break}
    case 'pwshow':{const pw=$('#a_pw');if(pw){const sh=pw.type==='password';pw.type=sh?'text':'password';const b=document.querySelector('[data-act="pwshow"]');if(b)b.textContent=sh?_('إخفاء الباسورد'):_('إظهار الباسورد')}break}
@@ -2216,7 +2251,7 @@ document.addEventListener('click',function(ev){
    case 'join':joinCoach();break;
    case 'unlink':unlinkCoach();break;
    case 'syncnow':syncNow();break;
-   case 'msend':case 'asend':{const T=msgTarget(a);sendMsg(T.from,T.uid);break}
+   case 'msend':case 'asend':{if(sendOrRec(a))break;const T=msgTarget(a);sendMsg(T.from,T.uid);break}
    case 'mic':micToggle(d.to);break;
    case 'miccancel':stopRec(true);break;
    case 'saveprof':saveProf();break;
@@ -2234,8 +2269,8 @@ document.addEventListener('click',function(ev){
    case 'regate':regate();break;
    case 'ntclear':ntRead();refreshInbox();break;
    case 'ntperm':try{Notification.requestPermission().then(r=>{if(r==='granted')pushRegister();toast(r==='granted'?_('التنبيهات اتفعّلت'):_('التنبيهات مش متاحة على الجهاز ده'));refreshInbox();if(S.tab==='home'||isCoach())render()})}catch(e){toast(_('التنبيهات مش متاحة على الجهاز ده'))}break;
-   case 'cplanedit':{const d0=U.cc.detail;if(!d0||!d0.T)break;const pl=d0.plan?JSON.parse(JSON.stringify(d0.plan)):{};pl.targets=pl.targets||{};pl.trainDays=pl.trainDays||[];pl.meals=pl.meals||[];pl.program=pl.program||null;pl.note=pl.note||'';pl.weekGoal=pl.weekGoal||'';U.cc.edit=pl;U.cc.fq='';U.cc.fqty='100';U.cc.fcat='all';renderCoachApp();window.scrollTo(0,0);break}
-   case 'cplancancel':U.cc.edit=null;U.modal=null;renderCoachApp();window.scrollTo(0,0);break;
+   case 'cplanedit':{const d0=U.cc.detail;if(!d0||!d0.T)break;const pl=normPlan(d0.plan),dr=getDraft(U.cc.sel.uid);U.cc.edit=dr?Object.assign(normPlan(null),dr.edit):pl;U.cc.fq='';U.cc.fqty='100';U.cc.fcat='all';renderCoachApp();window.scrollTo(0,0);break}
+   case 'cplancancel':if(!discardDraft())break;U.cc.edit=null;U.modal=null;renderCoachApp();window.scrollTo(0,0);break;
    case 'cplansave':saveClientPlan();break;
    case 'ctd':{const a=U.cc.edit.trainDays,i=+d.i,x=a.indexOf(i);if(x>=0)a.splice(x,1);else a.push(i);a.sort((p,q)=>p-q);renderCoachApp();break}
    case 'cpreset':{const k=$('#cpreset').value,e=U.cc.edit;if(k==='__empty')e.program={name:'',sets:'',days:[{n:_('يوم 1'),ex:[]}]};else{const pr=PROGRAMS[k];e.program={name:pr.n,sets:pr.sets||'',days:pr.days.map(x=>({n:x.n,ex:x.ex.slice()}))}}renderCoachApp();break}
@@ -2264,7 +2299,7 @@ document.addEventListener('click',function(ev){
      if(x){x.name=(w.name||'').trim()||x.name;x.note=(w.note||'').trim();x.exercises=ex;x.sets=ex.reduce((a,e)=>a+e.sets.length,0);x.volume=ex.reduce((a,e)=>a+e.sets.reduce((t,q)=>t+q.kg*q.reps,0),0);x.prs=ex.reduce((a,e)=>a+e.sets.filter(q=>q.pr).length,0)}
      U.modal=null;U.ew=null;save();render();toast(_('اتعدّل التمرين'));break}
    case 'cback':U.cc.edit=null;closeClient();U.cc.sel=null;U.cc.detail=null;renderCoachApp();break;
-   case 'csend':sendMsg('coach',U.cc.sel&&U.cc.sel.uid);break;
+   case 'csend':if(sendOrRec(a))break;sendMsg('coach',U.cc.sel&&U.cc.sel.uid);break;
    case 'copyinv':copyInv();break;
    case 'install':installApp();break;
    case 'hideinstall':S.settings.hideInstall=true;saveLocal();render();break;
@@ -2306,6 +2341,551 @@ $('#impf').addEventListener('change',function(ev){
     const d=defState();S=Object.assign(d,o);S.profile=Object.assign(d.profile,o.profile);S.wu=o.wu||'cups';if(S.wu!=='ml'&&!(o.profile&&+o.profile.waterGoal>0))S.profile.waterGoal=8;migWater(S);S.settings=Object.assign({theme:'auto'},o.settings||{});S.active=null;S.tab='more';S.sub='set';S.updated=Date.now();U.confirmImport=false;applyTheme();save();render();toast(_('اتستورد الملف'))}catch(e){toast(_('الملف مش نسخة Forma صحيحة'))}};
   r.readAsText(f);
 });
+
+/* ===== v31 features ===== */
+/* ===== FX: extra click actions ===== */
+const FX={};
+document.addEventListener('click',function(ev){
+  const t=ev.target.closest&&ev.target.closest('[data-act]');if(!t)return;
+  const f=FX[t.dataset.act];if(f){try{f(t.dataset,t,ev)}catch(e){console.error(e);toast(_('حصلت مشكلة، جرّب تاني'))}}
+});
+/* قبول الاشتراك */
+FX.accept=function(d){
+  const a=findAcct(d.id);if(!a)return;
+  const u=addMonths(Math.max(Date.now(),effUntil(a)),1);
+  setAccess(d.id,{until:u,blocked:false},_('اتقبل الاشتراك وفُعّل الحساب لحد ')+fmtD(u));
+  pushNotify(d.id,(C.profile&&C.profile.name)||'Forma',_('تم قبول اشتراكك وتفعيل حسابك لحد ')+fmtD(u),'sub');
+};
+/* زيادة / تقليل بالأيام */
+function adjDays(id,sign,box){
+  const a=findAcct(id);if(!a)return;
+  const inp=box&&box.querySelector('.dayin');const n=Math.floor(pf(inp&&inp.value));
+  if(!(n>=1&&n<=365)){toast(_('اكتب عدد أيام من 1 لـ 365'));return}
+  const cur=effUntil(a);
+  if(sign<0&&!cur){toast(_('الحساب لسه متفعّلش. اقبله الأول'));return}
+  let u=sign>0?Math.max(Date.now(),cur)+n*864e5:cur-n*864e5;
+  if(u<=Date.now()){
+    if(!confirm(_('التقليل ده هيخلّي الاشتراك ينتهي فوراً والحساب يتقفل (بياناته هتفضل محفوظة). تكمل؟')))return;
+    u=Date.now();
+  }
+  setAccess(id,{until:u,blocked:false},(sign>0?_('اتزوّد ')+n+_n(n,' يوم'):_('اتقلّل ')+n+_n(n,' يوم'))+' · '+fmtD(u));
+  pushNotify(id,(C.profile&&C.profile.name)||'Forma',_('اشتراكك اتعدّل لحد ')+fmtD(u),'sub');
+}
+FX.dadd=(d,t)=>adjDays(d.id,1,t.closest('.dayctl'));
+FX.dsub=(d,t)=>adjDays(d.id,-1,t.closest('.dayctl'));
+
+FX.recstopsend=function(){if(REC){REC.autoSend=true;stopRec(false)}};
+
+/* ===== habits with selectable values ===== */
+const HUN={
+  h:{l:'ساعة',o:[3,4,5,5.5,6,6.5,7,7.5,8,8.5,9,10,11,12]},
+  steps:{l:'خطوة',o:[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,12000,15000,20000]},
+  min:{l:'دقيقة',o:[5,10,15,20,30,45,60,90,120]},
+  n:{l:'مرة',o:[1,2,3,4,5,6,7,8,9,10]}
+};
+function habMig(T){
+  const H=T.habits=T.habits||{list:[],log:{}};H.val=H.val||{};
+  const M={'نمت 7 ساعات':{n:'ساعات النوم',t:'pick',u:'h',link:'sleep'},'مشيت 8000 خطوة':{n:'عدد الخطوات',t:'pick',u:'steps'},'إطالة 10 دقايق':{n:'إطالة ومرونة',t:'pick',u:'min'}};
+  (H.list||[]).forEach(h=>{if(!h.t){const m=M[h.n];if(m)Object.assign(h,m);else h.t='check'}});
+}
+const habOpt=(x,v)=>{const u=HUN[x.u]||HUN.n;return '<option value="">'+esc(_('اختار'))+'</option>'+u.o.map(n=>'<option value="'+n+'"'+(String(v)===String(n)?' selected':'')+'>'+(+n>=1000?n.toLocaleString('en'):n)+' '+_(u.l)+'</option>').join('')};
+const habV=(id,k)=>((S.habits.val||{})[k||dkey()]||{})[id];
+function habSelect(x){return '<select class="habsel" data-habv="'+esc(x.id)+'" aria-label="'+esc(_(x.n))+'">'+habOpt(x,habV(x.id))+'</select>'}
+function habChip(x){
+  const hd=S.habits.log[dkey()]||[];
+  if(x.t==='pick')return '<label class="hsel"><span>'+esc(_(x.n))+'</span>'+habSelect(x)+'</label>';
+  return '<button class="chip'+(hd.includes(x.id)?' on':'')+'" data-act="habit" data-id="'+x.id+'">'+esc(_(x.n))+'</button>';
+}
+function habCtl(x,hd){
+  if(x.t==='pick')return habSelect(x).replace('class="habsel"','class="habsel" style="max-width:130px;flex:none"');
+  return '<button class="chk'+(hd.includes(x.id)?' on':'')+'" style="width:44px;flex:none" data-act="habit" data-id="'+x.id+'" aria-label="'+esc(_(x.n))+'">'+(hd.includes(x.id)?'✓':'')+'</button>';
+}
+function habAddForm(){
+  return '<div class="card"><h3>'+_('عادة جديدة')+'</h3><div class="row" style="margin-top:8px"><input id="nh" maxlength="40" placeholder="'+esc(_('اسم العادة'))+'" aria-label="'+esc(_('اسم العادة'))+'"></div><div class="grid2" style="margin-top:8px"><select id="nht" aria-label="'+esc(_('نوع العادة'))+'"><option value="check">'+_('تأشير (تمت / لسه)')+'</option><option value="pick">'+_('اختيار رقم')+'</option></select><select id="nhu" aria-label="'+esc(_('الوحدة'))+'"><option value="n">'+_('مرات')+'</option><option value="h">'+_('ساعات')+'</option><option value="min">'+_('دقايق')+'</option><option value="steps">'+_('خطوات')+'</option></select></div><button class="btn block" style="margin-top:10px" data-act="addhabit">'+_('أضف')+'</button></div>';
+}
+function sleepSelect(h){
+  const o=[];for(let v=3;v<=12;v+=.5)o.push(v);
+  return '<select id="slh" data-sleepsel="1" aria-label="'+esc(_('ساعات النوم'))+'"><option value="">'+esc(_('نمت قد إيه؟ اختار'))+'</option>'+o.map(v=>'<option value="'+v+'"'+(+h===v?' selected':'')+'>'+v+' '+_('ساعة')+'</option>').join('')+'</select>';
+}
+function setHabVal(id,v){
+  const k=dkey(),H=S.habits;H.val=H.val||{};const m=H.val[k]=H.val[k]||{};
+  const x=H.list.find(y=>y.id===id);if(!x)return;
+  const l=H.log[k]=H.log[k]||[],i=l.indexOf(id);
+  if(v===''||v==null||!(+v>0)){delete m[id];if(i>=0)l.splice(i,1)}
+  else{m[id]=+v;if(i<0)l.push(id)}
+  if(x.link==='sleep'){
+    if(+v>0)S.sleep[k]=Object.assign({q:0},S.sleep[k],{h:+v});
+  }
+  save();render();
+}
+function setSleep(v){
+  const k=dkey();
+  if(!(+v>0)){if(S.sleep[k]){delete S.sleep[k].h}save();render();return}
+  S.sleep[k]=Object.assign({},S.sleep[k],{h:+v});
+  (S.habits.list||[]).filter(x=>x.link==='sleep').forEach(x=>{
+    const m=(S.habits.val[k]=S.habits.val[k]||{});m[x.id]=+v;const l=S.habits.log[k]=S.habits.log[k]||[];if(!l.includes(x.id))l.push(x.id)});
+  save();render();
+}
+document.addEventListener('change',function(ev){
+  const t=ev.target;if(!t||!t.dataset)return;
+  if(t.dataset.habv!==undefined)setHabVal(t.dataset.habv,t.value);
+  else if(t.dataset.sleepsel)setSleep(t.value);
+  else if(t.id==='nht'){const u=$('#nhu');if(u)u.disabled=t.value!=='pick'}
+});
+(function(){const st=document.createElement('style');st.textContent='.hsel{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 12px;font-size:14px}.hsel select,.habsel,#slh{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:40px}#slh{width:100%}.hsel select{border:0;background:transparent;max-width:140px}';document.head.appendChild(st)})();
+
+/* ===== any entry counts as activity; adherence; auto-sync ===== */
+function allActiveDates(){
+  const s=new Set(activeDates());
+  Object.keys(S.meals||{}).forEach(k=>{if((S.meals[k]||[]).length)s.add(k)});
+  Object.keys(S.water||{}).forEach(k=>{if(+S.water[k]>0)s.add(k)});
+  Object.keys(S.sleep||{}).forEach(k=>{if(S.sleep[k]&&+S.sleep[k].h>0)s.add(k)});
+  Object.keys(S.mood||{}).forEach(k=>{if(S.mood[k])s.add(k)});
+  ((S.habits&&S.habits.log)||{});Object.keys((S.habits&&S.habits.log)||{}).forEach(k=>{if((S.habits.log[k]||[]).length)s.add(k)});
+  (S.weights||[]).forEach(w=>w.date&&s.add(w.date));(S.measures||[]).forEach(w=>w.date&&s.add(w.date));
+  return s;
+}
+function adherence(){
+  try{
+    const t=targets(),days=[];for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()-i);days.push(dkey(d))}
+    const ws=weekStats(),goal=+S.profile.weekGoal||4;
+    const tr=Math.min(100,Math.round(ws.n/goal*100));
+    let fd=0,wt=0;const g=waterGoalMl();
+    days.forEach(k=>{const k2=dayTotals(k).k;if(k2>0&&k2>=t.kcal*.8&&k2<=t.kcal*1.15)fd++;if((+S.water[k]||0)>=g*.8)wt++});
+    fd=Math.round(fd/7*100);wt=Math.round(wt/7*100);
+    const hl=(S.habits&&S.habits.list)||[];let hb=null;
+    if(hl.length)hb=Math.round(days.reduce((a,k)=>a+hl.filter(h=>((S.habits.log[k]||[]).includes(h.id))).length,0)/(hl.length*7)*100);
+    const parts=[tr,fd,wt].concat(hb==null?[]:[hb]);
+    return{tr,fd,wt,hb,all:Math.round(parts.reduce((a,b)=>a+b,0)/parts.length)};
+  }catch(e){return null}
+}
+function todaySnap(){
+  try{const k=dkey(),tt=dayTotals(k),sl=S.sleep[k]||{};return{k:Math.round(tt.k),p:Math.round(tt.p),w:+S.water[k]||0,sl:+sl.h||0,hd:((S.habits.log||{})[k]||[]).length,m:S.mood[k]||0}}catch(e){return null}
+}
+/* auto-send: when the app goes to background, comes back online, or has pending errors */
+function flushSync(){if(C.user&&CLOUD&&!isCoach()&&(sync.timer||sync.st==='err'||sync.st==='saving')){clearTimeout(sync.timer);runSync()}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSync()});
+window.addEventListener('pagehide',flushSync);
+window.addEventListener('online',()=>{if(C.user&&!isCoach())schedSync()});
+setInterval(()=>{if(sync.st==='err'&&C.user&&!isCoach()&&navigator.onLine!==false)schedSync()},60000);
+/* first open of the day: send whatever is there without asking */
+setInterval(()=>{if(C.user&&C.profile&&C.profile.coachId&&!isCoach()&&!sync.busy&&sync.st==='ok'){const ls=S.lastSync?dkey(new Date(S.lastSync)):'';if(ls!==dkey())schedSync()}},30000);
+
+/* ===== plan drafts ===== */
+const DRK=()=>'forma.draft.plan.'+((C.user&&C.user.uid)||'x');
+function drAll(){try{return JSON.parse(localStorage.getItem(DRK())||'{}')||{}}catch(e){return{}}}
+function drPut(o){try{localStorage.setItem(DRK(),JSON.stringify(o))}catch(e){}}
+function normPlan(p){const pl=p?JSON.parse(JSON.stringify(p)):{};pl.targets=pl.targets||{};pl.trainDays=pl.trainDays||[];pl.meals=pl.meals||[];pl.program=pl.program||null;pl.note=pl.note||'';pl.weekGoal=pl.weekGoal||'';return pl}
+function getDraft(cid){const a=drAll();return a[cid]||null}
+function dropDraft(cid){const a=drAll();if(a[cid]){delete a[cid];drPut(a)}}
+function saveDraft(){
+  const e=U.cc&&U.cc.edit,c=U.cc&&U.cc.sel;if(!e||!c||!C.user)return;
+  const base=JSON.stringify(normPlan(U.cc.detail&&U.cc.detail.plan)),cur=JSON.stringify(normPlan(e));
+  if(base===cur){dropDraft(c.uid);return}
+  const a=drAll();a[c.uid]={ts:Date.now(),name:c.name||'',edit:JSON.parse(cur)};drPut(a);
+}
+function discardDraft(){
+  const e=U.cc.edit,c=U.cc.sel;if(!e||!c)return true;
+  const dirty=JSON.stringify(normPlan(e))!==JSON.stringify(normPlan(U.cc.detail&&U.cc.detail.plan));
+  if(dirty&&!confirm(_('هتمسح التعديلات اللي ما اتحفظتش؟')))return false;
+  dropDraft(c.uid);return true;
+}
+function draftBanner(cid){
+  const d=getDraft(cid);if(!d)return '';
+  return '<div class="card" style="border:1px solid var(--accent)"><b>'+_('مسودة لسه ما اتحفظتش')+'</b><div class="muted" style="margin:4px 0 8px">'+_('تعديلاتك محفوظة على جهازك لحد ما تدوس «حفظ الخطة».')+'</div><button class="btn line sm" data-act="cdraftfresh">'+_('ارجع للخطة المحفوظة')+'</button></div>';
+}
+function draftCard(cid){
+  const d=getDraft(cid);if(!d)return '';
+  return '<div class="card" style="border:1px solid var(--accent)"><b>'+_('عندك تعديلات على الخطة لسه ما اتحفظتش')+'</b><div class="muted" style="margin:4px 0 8px">'+_('آخر تعديل ')+ago(d.ts)+'</div><div class="row" style="gap:8px"><button class="btn sm" data-act="cdraftgo">'+_('كمّل وحفظ')+'</button><button class="btn line sm" data-act="cdraftdrop">'+_('امسح المسودة')+'</button></div></div>';
+}
+FX.cplanback=function(){saveDraft();U.cc.edit=null;U.modal=null;renderCoachApp();window.scrollTo(0,0)};
+FX.cdraftgo=function(){const d0=U.cc.detail;if(!d0||!d0.T||!U.cc.sel)return;const dr=getDraft(U.cc.sel.uid);U.cc.edit=dr?Object.assign(normPlan(null),dr.edit):normPlan(d0.plan);U.cc.fq='';U.cc.fqty='100';U.cc.fcat='all';renderCoachApp();window.scrollTo(0,0)};
+FX.cdraftdrop=function(){if(!U.cc.sel)return;if(!confirm(_('تمسح المسودة؟')))return;dropDraft(U.cc.sel.uid);renderCoachApp()};
+FX.cdraftfresh=function(){const d0=U.cc.detail;if(!U.cc.sel||!d0)return;if(!confirm(_('هترجع للخطة المحفوظة وتمسح المسودة؟')))return;dropDraft(U.cc.sel.uid);U.cc.edit=normPlan(d0.plan);renderCoachApp()};
+document.addEventListener('click',()=>{try{if(U.cc&&U.cc.edit&&U.cc.sel)saveDraft()}catch(e){}},true);
+let drT=0;
+document.addEventListener('input',ev=>{const t=ev.target;if(t&&t.dataset&&(t.dataset.cf||t.id==='cfq')){clearTimeout(drT);drT=setTimeout(()=>{try{saveDraft()}catch(e){}},300)}});
+setInterval(()=>{try{if(U.cc&&U.cc.edit&&U.cc.sel)saveDraft()}catch(e){}},2000);
+document.addEventListener('visibilitychange',()=>{try{if(document.visibilityState==='hidden')saveDraft()}catch(e){}});
+window.addEventListener('pagehide',()=>{try{saveDraft()}catch(e){}});
+(function(){const r0=renderCoachApp;renderCoachApp=function(){const x=r0.apply(this,arguments);try{if(U.cc.edit&&U.cc.sel)saveDraft()}catch(e){}return x}})();
+/* reopen the app: jump back into the plan editor the coach left unsaved */
+function autoResumeDraft(){
+  if(U.resumed||!C.user||!isCoach())return;
+  const a=drAll(),ids=Object.keys(a).filter(id=>(C.clients||[]).some(c=>c.uid===id)).sort((x,y)=>a[y].ts-a[x].ts);
+  if(!ids.length)return;
+  U.resumed=true;const id=ids[0];
+  openClient(id).then(()=>{
+    const d0=U.cc.detail;if(!U.cc.sel||U.cc.sel.uid!==id||!d0||!d0.T)return;
+    U.cc.edit=Object.assign(normPlan(null),a[id].edit);U.cc.fq='';U.cc.fqty='100';U.cc.fcat='all';renderCoachApp();window.scrollTo(0,0);
+    toast(_('رجّعنا لك تعديلاتك اللي ما اتحفظتش. دوس حفظ الخطة'));
+  }).catch(()=>{});
+}
+(function(){const a=ntCoach;ntCoach=function(){const x=a.apply(this,arguments);try{autoResumeDraft()}catch(e){}return x}})();
+
+/* ===== overlay helper ===== */
+function fxOpen(html){fxClose();const o=document.createElement('div');o.className='modal';o.id='fxov';o.innerHTML='<div class="sheet" role="dialog" aria-modal="true" style="max-height:92%">'+html+'</div>';o.addEventListener('click',e=>{if(e.target===o)fxClose()});document.body.appendChild(o);return o}
+function fxClose(){const o=document.getElementById('fxov');if(o)o.remove()}
+FX.fxclose=fxClose;
+const fxHead=(t,danger)=>'<div class="row sp" style="margin-bottom:8px"><h3 style="margin:0'+(danger?';color:var(--danger)':'')+'">'+t+'</h3><button class="x" data-act="fxclose" aria-label="'+esc(_('قفل'))+'">✕</button></div>';
+/* ===== legal ===== */
+const LEGAL_EMAIL='hsalah78600@gmail.com';
+const LEGAL={
+ar:[
+['مين إحنا','Forma (فورما) تطبيق لمتابعة التمرين والأكل بين المدرب وعملائه. الإدارة هي اللي بتشغّل التطبيق وبتدير اشتراكات المدربين.'],
+['البيانات اللي بنجمعها','الاسم والإيميل ورقم الموبايل والصورة الشخصية (اختياري) والنوع والسن والطول والوزن والقياسات، وتمارينك وأكلك وشربك للمية ونومك وعاداتك ومزاجك، وصور التقدم اللي بتضيفها بنفسك، والرسايل (نص وصور وصوت) بينك وبين مدربك أو الإدارة.'],
+['بنستخدمها في إيه','عشان تشتغل ميزات التطبيق: تسجيل بياناتك، متابعة مدربك ليك، الإشعارات، ومساعد الذكاء الاصطناعي. مش بنبيع بياناتك ومفيش إعلانات.'],
+['مين بيشوف بياناتك','مدربك اللي ربطت نفسك بيه بالكود، وبس. الإدارة بتشوف بيانات الحساب والاشتراك وبتقدر تراسلك. غير كده محدش. تقدر تفصل نفسك عن مدربك في أي وقت وهو ساعتها مش هيشوف حاجة.'],
+['الخدمات اللي بنستعين بيها','Google Firebase (تسجيل الدخول وتخزين البيانات)، Cloudflare (الاستضافة والإشعارات ومساعد الذكاء الاصطناعي)، وOpen Food Facts (البحث عن الأكل والباركود: بيتبعت لهم اسم الصنف أو رقم الباركود بس). رسايلك للمساعد الذكي بتتبعت لنموذج ذكاء اصطناعي عشان يرد عليك، فما تكتبش فيها معلومات حساسة.'],
+['إمتى بتتمسح','بياناتك فاضلة محفوظة لحد ما تمسح حسابك. لو اشتراكك خلص، الحساب بيتقفل بس بياناتك فاضلة. تقدر في أي وقت تدوس «حذف حسابي وبياناتي» (من تبويب مدربي أو حسابي) فتتمسح نهائياً من السيرفر.'],
+['حقوقك','تشوف بياناتك وتنزّل نسخة منها (زرار تصدير)، وتعدّلها، وتفصل مدربك، وتمسح حسابك.'],
+['الأمان','بنستخدم تسجيل دخول مؤمّن وقواعد وصول بتمنع أي حد من قراءة بيانات غيره. ومع ذلك مفيش نظام آمن 100%. حافظ على باسوردك ومتشاركوش.'],
+['تنبيه صحي','التطبيق للمتابعة والتحفيز مش بديل عن الطبيب. استشر طبيبك قبل أي نظام غذائي أو تمرين، خصوصاً لو عندك مرض أو إصابة أو حمل. تقديرات السعرات والمساعد الذكي تقريبية وممكن تغلط.'],
+['شروط الاستخدام','الاستخدام لمن عمره 18 سنة أو أكتر (أو بموافقة ولي الأمر). التفعيل والاشتراك بيتم عن طريق مدربك أو الإدارة، وأي اتفاق مالي بيكون بينك وبينهم خارج التطبيق. ممنوع إساءة استخدام التطبيق أو رفع محتوى مسيء أو انتحال شخصية. بنقدّم الخدمة «كما هي» وممكن نحدّثها أو نوقفها أو نقفل حساب يخالف الشروط.'],
+['تواصل معانا','من رسايل الإدارة داخل التطبيق أو على: '+LEGAL_EMAIL]
+],
+en:[
+['Who we are','Forma is an app for tracking training and nutrition between a coach and their clients. The Forma admin runs the app and manages coach subscriptions.'],
+['Data we collect','Name, email, phone number, optional profile photo, sex, age, height, weight and measurements; your workouts, food, water, sleep, habits and mood; progress photos you add yourself; and messages (text, images, voice) between you and your coach or the admin.'],
+['How we use it','To run the app: recording your data, letting your coach follow you, notifications and the AI assistant. We do not sell your data and there are no ads.'],
+['Who can see your data','Your coach (the one you linked to with their code) and nobody else. The admin sees account and subscription details and can message you. You can unlink from your coach at any time and they stop seeing your data.'],
+['Services we use','Google Firebase (sign-in and data storage), Cloudflare (hosting, notifications and the AI assistant), and Open Food Facts (food and barcode search: only the food name or barcode number is sent). Your messages to the AI assistant are sent to an AI model so it can answer, so do not put sensitive information in them.'],
+['When it is deleted','Your data stays until you delete your account. If your subscription ends the account is locked but your data is kept. At any time you can tap “Delete my account and data” (in the My coach or My account tab) and it is permanently erased from the server.'],
+['Your rights','View your data, download a copy (export button), edit it, unlink your coach and delete your account.'],
+['Security','We use secure sign-in and access rules that stop anyone from reading other people’s data. No system is 100% secure, so keep your password private.'],
+['Health notice','The app is for tracking and motivation and is not a substitute for a doctor. Consult your doctor before any diet or training plan, especially with a condition, injury or pregnancy. Calorie estimates and the AI assistant are approximate and can be wrong.'],
+['Terms of use','For people aged 18 or over (or with a guardian’s consent). Activation and subscription are handled by your coach or the admin, and any payment arrangement is between you and them outside the app. Do not misuse the app, upload abusive content or impersonate others. The service is provided “as is” and may be updated, suspended, or an account closed for breaking these terms.'],
+['Contact','Use the admin messages inside the app, or email: '+LEGAL_EMAIL]
+]};
+FX.legal=function(){
+  const L=LEGAL[LANG==='en'?'en':'ar'];
+  fxOpen(fxHead(_('الشروط وسياسة الخصوصية'))+'<div class="legal">'+L.map(s=>'<h4 style="margin:14px 0 4px">'+esc(s[0])+'</h4><div class="muted" style="line-height:1.8;color:var(--fg)">'+esc(s[1])+'</div>').join('')+'</div><button class="btn block" style="margin-top:16px" data-act="fxclose">'+_('تمام')+'</button>');
+};
+/* ===== delete account ===== */
+function wipeLocal(){try{Object.keys(localStorage).filter(k=>/^(hassanfit|forma)\./.test(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}}
+FX.delacct=function(){
+  const co=isCoach(),n=co?(C.clients||[]).length:0;
+  fxOpen(fxHead(_('حذف الحساب نهائياً'),1)
+   +'<p class="muted" style="line-height:1.8">'+(co?_('هيتمسح حسابك وكود الدعوة ومحادثاتك مع الإدارة. عملاؤك هيتفصلوا عنك وبياناتهم تفضل عندهم. عدد عملائك دلوقتي: ')+n:_('هيتمسح حسابك وكل بياناتك على السيرفر: التمارين والأكل والوزن والقياسات والرسايل والصور. ومدربك مش هيشوفها تاني.'))+' <b>'+_('مفيش رجوع بعد كده.')+'</b></p>'
+   +'<label class="f" for="da_pw">'+_('اكتب الباسورد للتأكيد')+'</label><input id="da_pw" type="password" autocomplete="current-password" style="direction:ltr">'
+   +'<label class="f" for="da_w" style="margin-top:10px">'+_('اكتب كلمة «حذف» للتأكيد')+'</label><input id="da_w" autocomplete="off" autocapitalize="off">'
+   +'<label class="row" style="margin-top:12px;align-items:flex-start;gap:8px"><input type="checkbox" id="da_loc" checked><span>'+_('امسح كمان بيانات التطبيق من الجهاز ده')+'</span></label>'
+   +'<div id="da_err" role="alert" style="color:var(--danger);margin-top:8px"></div>'
+   +'<button class="btn danger block" style="margin-top:12px" data-act="delgo">'+_('احذف حسابي نهائياً')+'</button>');
+};
+FX.delgo=async function(d,t){
+  const pw=($('#da_pw')||{}).value||'',w=(($('#da_w')||{}).value||'').trim().toLowerCase(),err=$('#da_err');
+  if(w!=='حذف'&&w!=='delete'){err.textContent=_('اكتب كلمة «حذف» للتأكيد');return}
+  if(!pw){err.textContent=_('اكتب الباسورد للتأكيد');return}
+  if(isAdminUser()){err.textContent=_('حساب الإدارة مش بيتمسح من هنا');return}
+  t.disabled=true;err.textContent=_('ثواني…');
+  try{
+    await CLOUD.reauth(pw);
+    if(isCoach()){for(const c of (C.clients||[])){try{await CLOUD.setProfile(c.uid,{coachId:null,coachName:null})}catch(e){}}}
+    const uid=C.user.uid,code=(C.profile&&C.profile.code)||null;
+    try{await pushUnregister()}catch(e){}
+    const loc=($('#da_loc')||{}).checked;
+    await CLOUD.deleteAccount(uid,code);
+    if(loc)wipeLocal();
+    fxClose();toast(_('اتمسح حسابك وبياناتك'));
+    setTimeout(()=>location.reload(),900);
+  }catch(e){
+    t.disabled=false;
+    const c=String((e&&e.code)||(e&&e.message)||'');
+    err.textContent=/wrong-password|invalid-credential|invalid-login/.test(c)?_('الباسورد غلط'):/too-many/.test(c)?_('محاولات كتير. استنى شوية وجرّب تاني'):_('تعذر الحذف. اتأكد من النت وجرّب تاني');
+  }
+};
+/* put “privacy” + “delete account” under every sign-out button */
+function accUi(){
+  document.querySelectorAll('[data-act="signout"]').forEach(b=>{
+    const host=b.parentNode;if(!host||host.querySelector('[data-act="delacct"]'))return;
+    const l=document.createElement('button');l.className='linkbtn';l.dataset.act='legal';l.textContent=_('الشروط وسياسة الخصوصية');
+    host.appendChild(l);
+    if(!isAdminUser()&&C.user){const x=document.createElement('button');x.className='btn danger block';x.style.marginTop='10px';x.dataset.act='delacct';x.textContent=_('حذف حسابي وبياناتي');host.appendChild(x)}
+  });
+}
+(function(){const r0=render;render=function(){const x=r0.apply(this,arguments);try{accUi()}catch(e){}return x};const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{accUi()}catch(e){}return x}})();
+
+/* ===== adherence bar ===== */
+function adhBar(c){
+  const a=(c.summary||{}).adh;if(!a||typeof a.all!=='number')return '';
+  const col=a.all>=70?'var(--good,#16a34a)':a.all>=40?'var(--accent)':'var(--danger)';
+  return '<div style="margin-top:8px"><div class="row sp muted" style="font-size:12px"><span>'+_('الالتزام آخر 7 أيام')+'</span><b class="num" style="color:'+col+'">'+a.all+'%</b></div><div style="height:6px;border-radius:4px;background:var(--line);margin-top:4px;overflow:hidden"><div style="width:'+a.all+'%;height:100%;background:'+col+'"></div></div></div>';
+}
+/* ===== broadcast / reminders ===== */
+const bcToday=()=>parseKey(dkey());
+const bcIdle=c=>{const la=(c.summary||{}).lastActive;return la?Math.round((bcToday()-parseKey(la))/864e5):null};
+const bcExp=c=>accState(c)==='active'&&daysLeft(effUntil(c))<=7;
+function bcSource(){return U.bc&&U.bc.admin?(C.coaches||[]).filter(c=>C.user&&c.uid!==C.user.uid&&!c.blocked):(C.clients||[]).filter(c=>!c.blocked)}
+function bcAud(kind){
+  const L=bcSource();
+  switch(kind){
+    case 'm':return L.filter(c=>sexOf(c)==='m');
+    case 'f':return L.filter(c=>sexOf(c)==='f');
+    case 'idle':return L.filter(c=>accState(c)==='active'&&(bcIdle(c)===null||bcIdle(c)>=3));
+    case 'exp':return L.filter(bcExp);
+    case 'expired':return L.filter(c=>accState(c)==='expired');
+    default:return L;
+  }
+}
+const bcPreset=k=>({idle:_('وحشتنا يا {name}! بقالك {days} يوم ما سجّلت. ارجع كمّل تمرينك وأكلك النهاردة 💪'),exp:_('أهلاً {name}، اشتراكك هينتهي بعد {days} يوم. لو حابب تجدّده كلّمني.'),expired:_('أهلاً {name}، اشتراكك خلص. كلّمني نجدّده ونكمل سوا.')}[k]||'');
+function bcTools(L,idleOf){
+  const idle=L.filter(c=>{const d=idleOf(c);return accState(c)==='active'&&(d===null||d>=3)}).length;
+  const R=L.filter(c=>accState(c)==='expired'||bcExp(c));
+  let h='<div class="card"><h3 style="margin:0 0 10px">'+_('أدوات المدرب')+'</h3><div class="grid2"><button class="btn block" data-act="bcopen" data-k="all">📢 '+_('رسالة جماعية')+'</button><button class="btn line block" data-act="bcopen" data-k="idle"'+(idle?'':' disabled')+'>⏰ '+_('ذكّر الغايبين')+(idle?' ('+idle+')':'')+'</button></div></div>';
+  if(R.length)h+='<div class="card" style="border:1px solid var(--accent)"><div class="row sp"><h3 style="margin:0">'+_('التجديدات')+' ('+R.length+')</h3><button class="btn line sm" data-act="bcopen" data-k="exp">'+_('ذكّرهم كلهم')+'</button></div>'+R.map(c=>{
+    const exp=accState(c)==='expired',d=daysLeft(effUntil(c));
+    const msg=(bcPreset(exp?'expired':'exp')).replace(/\{name\}/g,(c.name||'').split(' ')[0]).replace(/\{days\}/g,d);
+    const wa=phOk(c.phone)?'<a class="btn alt sm" target="_blank" rel="noopener noreferrer" href="https://wa.me/'+phDig(c.phone)+'?text='+encodeURIComponent(msg)+'">💬 '+_('واتساب')+'</a>':'';
+    return '<div class="item" style="gap:8px;flex-wrap:wrap"><div class="grow"><b>'+esc(c.name||_('عميل'))+'</b><div class="muted" style="font-size:12px">'+(exp?_('انتهى منذ ')+Math.abs(d)+_n(Math.abs(d),' يوم'):_('هينتهي بعد ')+d+_n(d,' يوم'))+'</div></div>'+wa+'<button class="btn sm" data-act="ext" data-id="'+esc(c.uid)+'" data-m="1">+ '+_('شهر')+'</button></div>'}).join('')+'</div>';
+  return h;
+}
+function adminTools(L){
+  const R=L.filter(c=>accState(c)==='expired'||bcExp(c));
+  return '<div class="card"><div class="grid2"><button class="btn block" data-act="bcopen" data-k="all" data-admin="1">📢 '+_('رسالة لكل المدربين')+'</button><button class="btn line block" data-act="coachescsv">⬇ '+_('تصدير المدربين (CSV)')+'</button></div>'+(R.length?'<div class="muted" style="margin-top:10px">'+_('اشتراكات منتهية أو قربت: ')+R.length+' <button class="linkbtn" style="display:inline" data-act="bcopen" data-k="exp" data-admin="1">'+_('ذكّرهم')+'</button></div>':'')+'</div>';
+}
+function bcRender(keep){
+  const B=U.bc;if(!B)return;
+  const L=bcAud(B.aud),adm=B.admin;
+  const kinds=adm?[['all',_('كل المدربين')],['exp',_('اشتراكهم قرّب')],['expired',_('اشتراكهم خلص')]]:[['all',_('الكل')],['m',_('الذكور')],['f',_('الإناث')],['idle',_('الغايبين 3 أيام+')],['exp',_('اشتراكهم قرّب')],['expired',_('اشتراكهم خلص')]];
+  fxOpen(fxHead(adm?_('رسالة لكل المدربين'):_('رسالة جماعية'))
+   +'<div class="chips" style="margin:0 0 8px">'+kinds.map(k=>'<button class="chip'+(B.aud===k[0]?' on':'')+'" data-act="bcaud" data-k="'+k[0]+'">'+k[1]+'</button>').join('')+'</div>'
+   +'<div class="muted" id="bc_n" style="margin-bottom:8px">'+_('هتوصل لـ ')+'<b>'+L.length+'</b> '+(adm?_('مدرب'):_('عميل'))+'</div>'
+   +'<textarea id="bc_t" rows="5" maxlength="500" placeholder="'+esc(_('اكتب رسالتك. تقدر تستخدم {name} لاسم الشخص و{days} للأيام'))+'" aria-label="'+esc(_('نص الرسالة'))+'" style="width:100%">'+esc(B.txt||'')+'</textarea>'
+   +'<div id="bc_err" style="color:var(--danger);margin-top:6px"></div>'
+   +'<button class="btn block" style="margin-top:10px" data-act="bcsend"'+(L.length?'':' disabled')+'>'+_('إرسال')+'</button>');
+}
+FX.bcopen=function(d){U.bc={admin:!!d.admin,aud:d.k||'all',txt:bcPreset(d.k||'all'),last:bcPreset(d.k||'all')};bcRender()};
+FX.bcaud=function(d){const B=U.bc;if(!B)return;const t=$('#bc_t');const cur=t?t.value:B.txt;B.txt=(cur===B.last||!cur.trim())?bcPreset(d.k):cur;B.last=bcPreset(d.k);B.aud=d.k;bcRender()};
+FX.bcsend=async function(d,t){
+  const B=U.bc;if(!B)return;const txt=(($('#bc_t')||{}).value||'').trim().slice(0,500),err=$('#bc_err');
+  if(!txt){err.textContent=_('اكتب الرسالة الأول');return}
+  const L=bcAud(B.aud);if(!L.length)return;
+  if(!confirm(_('هتبعت الرسالة دي لـ ')+L.length+(B.admin?_(' مدرب؟'):_(' عميل؟'))))return;
+  t.disabled=true;let n=0,bad=0;const from=B.admin?'admin':'coach';
+  for(const c of L){
+    const days=B.aud==='idle'?(bcIdle(c)===null?'':bcIdle(c)):Math.abs(daysLeft(effUntil(c)));
+    const body=txt.replace(/\{name\}/g,(c.name||'').split(' ')[0]).replace(/\{days\}/g,days).slice(0,1900);
+    try{await CLOUD.sendMessage(c.uid,{from,txt:body,ts:Date.now()});n++;pushNotify(c.uid,(C.profile&&C.profile.name)||'Forma',body.slice(0,100),'msg')}catch(e){bad++}
+    err.style.color='var(--fg)';err.textContent=_('جاري الإرسال… ')+(n+bad)+' / '+L.length;
+  }
+  fxClose();U.bc=null;toast(_('اتبعتت لـ ')+n+(bad?' · '+_('فشلت ')+bad:''));
+};
+/* ===== backup / export ===== */
+const csvCell=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+const csvDate=ts=>ts?new Date(ts).toISOString().slice(0,10):'';
+function clientsCsv(){
+  const rows=[['name','email','phone','sex','status','until','last_active','week_workouts','week_goal','weight','avg_kcal','adherence_pct']];
+  (C.clients||[]).forEach(c=>{const s=c.summary||{};rows.push([c.name,c.email,c.phone,sexOf(c),accState(c),csvDate(effUntil(c)),s.lastActive,s.weekN,s.weekGoal,s.weight,s.kcalAvg,s.adh&&s.adh.all])});
+  return '﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\n');
+}
+function coachTools(){
+  if(!isCoach()||isAdminUser())return '';
+  return '<div class="card"><h3 style="margin:0 0 8px">'+_('نسخة احتياطية')+'</h3><div class="muted" style="margin-bottom:10px">'+_('نزّل بيانات عملائك على جهازك. الملف فيه كل حاجة عشان لو احتجتها.')+'</div><div class="grid2"><button class="btn block" data-act="bkall">⬇ '+_('كل البيانات (JSON)')+'</button><button class="btn line block" data-act="clientscsv">⬇ '+_('جدول العملاء (CSV)')+'</button></div></div>';
+}
+FX.clientscsv=()=>download('forma-clients-'+dkey()+'.csv',clientsCsv());
+FX.coachescsv=function(){
+  const rows=[['name','email','phone','status','until','clients']];
+  (C.coaches||[]).filter(c=>C.user&&c.uid!==C.user.uid).forEach(c=>rows.push([c.name,c.email,c.phone,accState(c),csvDate(effUntil(c)),(C.cnt||{})[c.uid]]));
+  download('forma-coaches-'+dkey()+'.csv','﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\n'));
+};
+FX.bkall=async function(d,t){
+  const L=C.clients||[];if(!L.length){toast(_('مفيش عملاء لسه'));return}
+  t.disabled=true;const out={app:'forma',kind:'coach-backup',ts:Date.now(),coach:{uid:C.user.uid,name:C.profile&&C.profile.name},clients:[]};
+  try{
+    let i=0;
+    for(const c of L){
+      i++;toast(_('بنجهّز النسخة… ')+i+' / '+L.length);
+      const rec={uid:c.uid,profile:c};
+      try{rec.data=await CLOUD.readChunks(c.uid)}catch(e){rec.data=null}
+      try{rec.plan=await CLOUD.getPlan(c.uid)}catch(e){rec.plan=null}
+      out.clients.push(rec);
+    }
+    download('forma-backup-'+dkey()+'.json',JSON.stringify(out));
+  }catch(e){toast(_('تعذر عمل النسخة'))}
+  t.disabled=false;
+};
+
+/* ===== progress photos ===== */
+const PH_MAX=40;
+function phCompare(L){
+  if(L.length<2)return '';
+  const a=L[0],b=L[L.length-1];
+  const cell=(p,l)=>'<div style="flex:1;min-width:0"><div class="muted" style="font-size:12px;margin-bottom:4px">'+l+' · '+esc(fmtDate(p.date))+'</div><img class="mimg" alt="" src="'+p.img+'" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px"></div>';
+  return '<div class="row" style="gap:8px;margin:8px 0 12px;align-items:flex-start">'+cell(a,_('قبل'))+cell(b,_('بعد'))+'</div>';
+}
+function phGrid(L,del){
+  return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+L.slice().reverse().map(p=>'<div style="position:relative"><img class="mimg" alt="" src="'+p.img+'" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:8px"><span class="muted" style="font-size:11px;display:block;text-align:center">'+esc(fmtDate(p.date))+'</span>'+(del?'<button class="x" style="position:absolute;top:2px;inset-inline-end:2px;background:rgba(0,0,0,.55);color:#fff;border-radius:50%" data-act="phdel" data-id="'+esc(p.id)+'" aria-label="'+esc(_('مسح الصورة'))+'">✕</button>':'')+'</div>').join('')+'</div>';
+}
+function photosCard(){
+  if(!C.user||!CLOUD||!CLOUD.listPhotos||isCoach())return '';
+  if(U.ph===undefined){U.ph=null;CLOUD.listPhotos(C.user.uid).then(l=>{U.ph=l.filter(p=>safeImg(p.img));if(S.tab==='prog')render()}).catch(()=>{U.ph=[]})}
+  const L=U.ph;
+  let h='<div class="card"><div class="row sp"><h3 style="margin:0">'+_('صور التقدم')+'</h3><label class="btn sm" style="cursor:pointer">📷 '+_('أضف صورة')+'<input type="file" id="phf" accept="image/*" hidden></label></div>';
+  h+='<div class="muted" style="font-size:12px;margin:6px 0 8px">'+_('مدربك بس هو اللي بيشوفها، وتقدر تمسحها في أي وقت.')+'</div>';
+  if(L===null)h+='<div class="muted">'+_('جاري التحميل…')+'</div>';
+  else if(!L.length)h+='<div class="muted">'+_('لسه مفيش صور. صوّر نفسك كل أسبوعين من نفس الزاوية.')+'</div>';
+  else h+=phCompare(L)+phGrid(L,true);
+  return h+'</div>';
+}
+function photosCoachCard(c){
+  if(!CLOUD||!CLOUD.listPhotos)return '';
+  if(!U.ccph||U.ccph.uid!==c.uid){U.ccph={uid:c.uid,list:null};const id=c.uid;CLOUD.listPhotos(id).then(l=>{if(U.ccph&&U.ccph.uid===id){U.ccph.list=l.filter(p=>safeImg(p.img));if(U.cc.sel&&U.cc.sel.uid===id&&!U.cc.edit)renderCoachApp()}}).catch(()=>{if(U.ccph&&U.ccph.uid===id)U.ccph.list=[]})}
+  const L=U.ccph.list;
+  let h='<div class="card"><h3>'+_('صور التقدم')+'</h3>';
+  if(L===null)h+='<div class="muted">'+_('جاري التحميل…')+'</div>';
+  else if(!L.length)h+='<div class="muted">'+_('العميل لسه ما أضافش صور.')+'</div>';
+  else h+=phCompare(L)+phGrid(L,false);
+  return h+'</div>';
+}
+document.addEventListener('change',async function(ev){
+  const t=ev.target;if(!t||t.id!=='phf'||!t.files||!t.files[0])return;
+  const f=t.files[0];t.value='';
+  if((U.ph||[]).length>=PH_MAX){toast(_('وصلت للحد الأقصى للصور. امسح صور قديمة الأول'));return}
+  try{
+    let img=await imgToData(f,800,.62);if(img.length>240000)img=await imgToData(f,600,.5);
+    if(img.length>250000)throw new Error('big');
+    const rec={ts:Date.now(),date:dkey(),img};
+    rec.id=await CLOUD.addPhoto(C.user.uid,rec);
+    U.ph=(U.ph||[]).concat([rec]);toast(_('اتحفظت الصورة'));render();
+  }catch(e){toast(_('تعذر حفظ الصورة'))}
+});
+FX.phdel=async function(d){
+  if(!confirm(_('تمسح الصورة دي؟')))return;
+  try{await CLOUD.delPhoto(C.user.uid,d.id);U.ph=(U.ph||[]).filter(p=>p.id!==d.id);render()}catch(e){toast(_('تعذر المسح'))}
+};
+(function(){const o=vProg;vProg=function(){return o.apply(this,arguments)+photosCard()}})();
+/* ===== adherence card (coach) ===== */
+function adhCard(c){
+  const s=c.summary||{},a=s.adh;if(!a)return '';
+  const bar=(l,v)=>v==null?'':'<div style="margin-top:8px"><div class="row sp" style="font-size:13px"><span>'+l+'</span><b class="num">'+v+'%</b></div><div style="height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:3px"><div style="width:'+v+'%;height:100%;background:var(--accent)"></div></div></div>';
+  const t=s.today;
+  return '<div class="card"><div class="row sp"><h3 style="margin:0">'+_('الالتزام آخر 7 أيام')+'</h3><b class="num" style="font-size:20px">'+a.all+'%</b></div>'+bar(_('التمرين'),a.tr)+bar(_('الأكل (في حدود السعرات)'),a.fd)+bar(_('المياه'),a.wt)+bar(_('العادات'),a.hb)+
+   (t?'<div class="muted" style="margin-top:12px;font-size:12px">'+_('النهاردة: ')+fmt(t.k)+' '+_('سعر')+' · '+_('بروتين')+' '+fmt(t.p)+' · '+_('مياه')+' '+f1((t.w||0)/1000)+' '+_('لتر')+(t.sl?' · '+_('نوم')+' '+t.sl:'')+'</div>':'')+'</div>';
+}
+
+/* ===== food tools: photo estimate + barcode ===== */
+function foodTools(){
+  return '<div class="card"><div class="grid2"><label class="btn block" style="cursor:pointer;text-align:center">📷 '+_('صوّر وجبتك')+'<input type="file" id="fpic" accept="image/*" capture="environment" hidden></label><button class="btn line block" data-act="bcscan">▮▯▮ '+_('باركود')+'</button></div><div class="muted" style="font-size:12px;margin-top:8px">'+_('التصوير بيقدّر الأكل بالذكاء الاصطناعي (تقريبي، عدّل الجرامات). الباركود بيجيب القيم من Open Food Facts.')+'</div></div>';
+}
+async function aiCall(path,body){
+  const tok=await CLOUD.idToken();
+  if(!tok||!PUSHCFG.url)return{err:_('سجّل دخول الأول عشان تستخدم الميزة دي.')};
+  try{
+    const r=await fetch(PUSHCFG.url.replace(/\/$/,'')+path,{method:'POST',headers:{Authorization:'Bearer '+tok,'content-type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok)return{j};
+    let m=j.error==='quota'?_('المساعد وصل للحد اليومي المجاني النهارده. جرب تاني بكرة.'):j.error==='user-limit'?_('وصلت للحد اليومي بتاعك. كمّل بكرة.'):r.status===503?_('المساعد لسه مش متفعّل.'):j.error==='coach only'?_('الميزة دي للمدربين بس.'):_('حصلت مشكلة، جرب تاني.');
+    if(isAdminUser()&&r.status!==429)m+=' ['+r.status+' '+(j.error||'')+(j.d?': '+j.d:'')+']';
+    return{err:m};
+  }catch(e){return{err:_('مفيش اتصال دلوقتي، جرب تاني.')}}
+}
+const defMeal=()=>{const h=new Date().getHours();return h<11?'فطار':h<17?'غدا':h<22?'عشا':'سناكس'};
+document.addEventListener('change',async function(ev){
+  const t=ev.target;if(!t||t.id!=='fpic'||!t.files||!t.files[0])return;
+  const f=t.files[0];t.value='';
+  if(!C.user){toast(_('سجّل دخول الأول عشان تستخدم الميزة دي.'));return}
+  fxOpen(fxHead(_('تحليل الوجبة'))+'<div class="muted" style="padding:24px 0;text-align:center">'+_('بنحلل الصورة… ممكن ياخد لحد نص دقيقة')+'</div>');
+  try{
+    let img=await imgToData(f,640,.6);if(img.length>300000)img=await imgToData(f,480,.5);
+    const r=await aiCall('/vision',{img,lang:LANG});
+    if(r.err){fxOpen(fxHead(_('تحليل الوجبة'))+'<div style="color:var(--danger);margin:12px 0">'+esc(r.err)+'</div><button class="btn block" data-act="fxclose">'+_('تمام')+'</button>');return}
+    const items=(r.j.items||[]).filter(x=>x.g>0).map(x=>({n:x.name,g:x.g,b:{k:x.k/x.g*100,p:x.p/x.g*100,c:x.c/x.g*100,f:x.f/x.g*100}}));
+    if(!items.length){fxOpen(fxHead(_('تحليل الوجبة'))+'<div class="muted" style="margin:12px 0">'+_('مش قادر أتعرّف على أكل في الصورة. جرّب صورة أوضح من فوق وإضاءة كويسة.')+'</div><button class="btn block" data-act="fxclose">'+_('تمام')+'</button>');return}
+    U.vis={items,meal:defMeal(),img};visRender();
+  }catch(e){fxOpen(fxHead(_('تحليل الوجبة'))+'<div style="color:var(--danger);margin:12px 0">'+_('تعذر قراءة الصورة')+'</div><button class="btn block" data-act="fxclose">'+_('تمام')+'</button>')}
+});
+const visTot=V=>V.items.reduce((a,x)=>{const r=x.g/100;return{k:a.k+x.b.k*r,p:a.p+x.b.p*r,c:a.c+x.b.c*r,f:a.f+x.b.f*r}},{k:0,p:0,c:0,f:0});
+function visRender(){
+  const V=U.vis;if(!V)return;const T=visTot(V);
+  fxOpen(fxHead(_('نتيجة التحليل'))
+   +'<div class="muted" style="font-size:12px;margin-bottom:8px">'+_('تقدير تقريبي بالذكاء الاصطناعي. صحّح الأسماء والجرامات قبل الإضافة.')+'</div>'
+   +V.items.map((x,i)=>'<div class="item" style="gap:8px;align-items:flex-end"><div class="grow"><input data-vn="'+i+'" value="'+esc(x.n)+'" maxlength="60" aria-label="'+esc(_('الاسم'))+'"><div class="muted num" id="vk'+i+'" style="font-size:12px;margin-top:2px">'+visLine(x)+'</div></div><div style="width:84px"><label class="f" style="font-size:11px">'+_('جم')+'</label><input data-vg="'+i+'" inputmode="decimal" value="'+x.g+'" aria-label="'+esc(_('الكمية بالجرام'))+'"></div><button class="x" data-act="visrm" data-i="'+i+'" aria-label="'+esc(_('شيل'))+'">✕</button></div>').join('')
+   +'<div class="stat" style="margin:10px 0" id="vtot">'+visTotHtml(T)+'</div>'
+   +'<label class="f">'+_('الوجبة')+'</label>'+chips(MEALS.map(m=>[m,_(m)]),V.meal,'vismeal')
+   +'<button class="btn block" style="margin-top:12px" data-act="visadd"'+(V.items.length?'':' disabled')+'>'+_('أضف للأكل')+'</button>');
+}
+const visLine=x=>{const r=x.g/100;return fmt(x.b.k*r)+' '+_('سعر')+' · '+_('بروتين')+' '+f1(x.b.p*r)+' · '+_('كارب')+' '+f1(x.b.c*r)+' · '+_('دهون')+' '+f1(x.b.f*r)};
+const visTotHtml=T=>'<b>'+fmt(T.k)+' '+_('سعر')+'</b><span>'+_('بروتين')+' '+f1(T.p)+' · '+_('كارب')+' '+f1(T.c)+' · '+_('دهون')+' '+f1(T.f)+'</span>';
+document.addEventListener('input',function(ev){
+  const t=ev.target;if(!t||!U.vis||!t.dataset)return;
+  if(t.dataset.vn!==undefined)U.vis.items[+t.dataset.vn].n=t.value.slice(0,60);
+  else if(t.dataset.vg!==undefined){const i=+t.dataset.vg;U.vis.items[i].g=Math.min(5000,Math.max(0,pf(t.value)));const e=$('#vk'+i);if(e)e.textContent=visLine(U.vis.items[i]);const T=$('#vtot');if(T)T.innerHTML=visTotHtml(visTot(U.vis))}
+});
+FX.visrm=function(d){U.vis.items.splice(+d.i,1);visRender()};
+FX.vismeal=function(d){U.vis.meal=d.v;visRender()};
+FX.visadd=function(){
+  const V=U.vis;if(!V)return;const k=dkey();S.meals[k]=S.meals[k]||[];
+  V.items.filter(x=>x.g>0&&x.n.trim()).forEach(x=>S.meals[k].push(mealEntry({n:x.n.trim(),k:x.b.k,p:x.b.p,c:x.b.c,f:x.b.f,u:'g'},Math.round(x.g),V.meal)));
+  U.vis=null;save();fxClose();render();toast(_('اتضاف للأكل'));
+};
+/* ---- barcode ---- */
+let bcStream=null,bcRaf=0;
+function bcStop(){cancelAnimationFrame(bcRaf);if(bcStream){bcStream.getTracks().forEach(t=>t.stop());bcStream=null}}
+FX.bcscan=async function(){
+  const can='BarcodeDetector' in window;
+  fxOpen(fxHead(_('امسح الباركود'))
+   +(can?'<video id="bcvid" playsinline muted style="width:100%;border-radius:12px;background:#000;max-height:46vh"></video><div class="muted" id="bcst" style="margin:6px 0">'+_('وجّه الكاميرا على الباركود')+'</div>':'<div class="muted" style="margin-bottom:8px">'+_('جهازك مش بيدعم المسح بالكاميرا. اكتب الرقم المطبوع تحت الباركود.')+'</div>')
+   +'<label class="f" for="bcnum">'+_('أو اكتب رقم الباركود')+'</label><div class="row" style="gap:8px"><input id="bcnum" inputmode="numeric" maxlength="14" style="direction:ltr" placeholder="6221234567890"><button class="btn" data-act="bclook">'+_('دوّر')+'</button></div><div id="bcerr" style="color:var(--danger);margin-top:8px" role="alert"></div>');
+  const o=document.getElementById('fxov');new MutationObserver((m,ob)=>{if(!document.getElementById('fxov')){bcStop();ob.disconnect()}}).observe(document.body,{childList:true});
+  if(!can)return;
+  try{
+    bcStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    const v=$('#bcvid');if(!v){bcStop();return}v.srcObject=bcStream;await v.play();
+    const det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+    const loop=async()=>{
+      if(!bcStream)return;
+      try{const r=await det.detect(v);if(r&&r[0]&&r[0].rawValue){bcLookup(r[0].rawValue);return}}catch(e){}
+      bcRaf=requestAnimationFrame(()=>setTimeout(loop,200));
+    };loop();
+  }catch(e){const st=$('#bcst');if(st)st.textContent=_('مش قادر يفتح الكاميرا. اكتب الرقم بإيدك.')}
+};
+FX.bclook=function(){bcLookup((($('#bcnum')||{}).value||'').trim())};
+async function bcLookup(code){
+  const err=$('#bcerr');code=String(code).replace(/\D/g,'');
+  if(code.length<8||code.length>14){if(err)err.textContent=_('الرقم لازم يكون من 8 لـ 14 رقم');return}
+  bcStop();if(err){err.style.color='var(--fg)';err.textContent=_('بندوّر…')}
+  const ctl=window.AbortController?new AbortController():null,to=setTimeout(()=>ctl&&ctl.abort(),9000);
+  try{
+    const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+code+'.json?fields=product_name,product_name_ar,product_name_en,brands,nutriments',ctl?{signal:ctl.signal}:{});
+    const j=await r.json(),p=j&&j.product,n=(p&&p.nutriments)||{},k=+n['energy-kcal_100g'];
+    if(!p||!(k>=0)){if(err){err.style.color='var(--danger)';err.textContent=_('الصنف ده مش موجود في القاعدة. ضيفه كصنف جديد.')}return}
+    const nm=String(p.product_name_ar||p.product_name||p.product_name_en||code).trim().slice(0,60),r1=v=>Math.round((+v||0)*10)/10;
+    const food={n:nm+(p.brands?' – '+String(p.brands).split(',')[0].trim().slice(0,24):''),e:nm,k:Math.round(k),p:r1(n.proteins_100g),c:r1(n.carbohydrates_100g),f:r1(n.fat_100g),u:'g',s:[],cat:'off'};
+    fxClose();U.fs={food,g:100,qty:1,meal:U.meal};U.modal='food';renderLayer();
+  }catch(e){if(err){err.style.color='var(--danger)';err.textContent=_('تعذر الاتصال. جرّب تاني.')}}
+  finally{clearTimeout(to)}
+}
+/* ===== AI plan draft for coach ===== */
+function aiPlanBox(){
+  return '<div class="card" style="border:1px dashed var(--accent)"><h3 style="margin:0 0 4px">✨ '+_('مسودة خطة بالذكاء الاصطناعي')+'</h3><div class="muted" style="margin-bottom:8px;font-size:13px">'+_('اكتب المطلوب وهيجهّز لك مسودة تعدّلها وتحفظها: سعرات وماكروز وأكل وبرنامج تمرين.')+'</div><textarea id="aip_t" rows="2" maxlength="300" placeholder="'+esc(_('مثلا: 2000 سعر تنشيف، 4 أيام تمرين'))+'" aria-label="'+esc(_('طلب الخطة'))+'"></textarea><button class="btn block" style="margin-top:8px" data-act="aiplan">'+_('اقترح مسودة')+'</button><div class="muted" id="aip_s" style="margin-top:6px"></div></div>';
+}
+const MEAL_MAP={'فطار':'فطار','فطور':'فطار','breakfast':'فطار','غدا':'غدا','غداء':'غدا','lunch':'غدا','عشا':'عشا','عشاء':'عشا','dinner':'عشا','سناك':'سناكس','سناكس':'سناكس','snack':'سناكس','snacks':'سناكس'};
+FX.aiplan=async function(d,t){
+  const e=U.cc.edit,c=U.cc.sel,dd=U.cc.detail;if(!e||!c||!dd||!dd.T)return;
+  const ask=(($('#aip_t')||{}).value||'').trim();if(!ask){toast(_('اكتب المطلوب الأول'));return}
+  if(((e.meals||[]).length||e.program)&&!confirm(_('المسودة هتستبدل الأكل والبرنامج اللي في الخطة الحالية. تكمل؟')))return;
+  const st=$('#aip_s');t.disabled=true;if(st)st.textContent=_('بنجهّز المسودة… ممكن ياخد نص دقيقة');
+  const p=dd.T.profile;
+  const ctx='name:'+(c.name||'')+'; sex:'+p.sex+'; age:'+p.age+'; height:'+p.height+'; weight:'+p.weight+'; target:'+(p.targetWeight||'')+'; goal:'+p.goal+'; activity:'+p.act+'; current kcal target:'+targets(p,dd.plan).kcal;
+  const r=await aiCall('/plan',{ask,ctx,lang:LANG,exs:EXS.map(x=>x[0]+'|'+x[1])});
+  t.disabled=false;
+  if(r.err){if(st)st.textContent=r.err;return}
+  const j=r.j,ed=U.cc.edit;if(!ed)return;
+  const T=j.targets||{};ed.targets=Object.assign({},ed.targets,{kcal:T.kcal||'',p:T.p||'',c:T.c||'',f:T.f||'',waterL:T.waterL||''});
+  ed.meals=(j.meals||[]).map(x=>{
+    const meal=MEAL_MAP[String(x.meal).toLowerCase().trim()]||'سناكس';
+    const per=v=>v/x.g*100,mine={n:x.name,k:per(x.k),p:per(x.p),c:per(x.c),f:per(x.f),u:'g'};
+    let f=mine;
+    try{const m=foodMatches(x.name,'all',true)[0];if(m&&isFinite(m.k)&&mine.k>0&&Math.abs(m.k-mine.k)/mine.k<.35&&!isSrv(m))f=m}catch(_e){}
+    return mealEntry(f,Math.round(x.g),meal);
+  });
+  const days=(j.days||[]).map(x=>({n:x.n,ex:x.ex.filter(id=>EXS.some(y=>y[0]===id))})).filter(x=>x.ex.length);
+  if(days.length){ed.program={name:_('مسودة الذكاء الاصطناعي'),sets:3,days};ed.weekGoal=String(days.length);ed.trainDays=({1:[0],2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,4,5],6:[0,1,2,3,4,5],7:[0,1,2,3,4,5,6]})[Math.min(7,days.length)]}
+  if(j.note)ed.note=j.note;
+  saveDraft();renderCoachApp();window.scrollTo(0,0);
+  toast(_('جهزنا المسودة. راجعها وعدّل وبعدين دوس حفظ الخطة'));
+};
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
