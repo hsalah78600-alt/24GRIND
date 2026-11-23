@@ -135,6 +135,12 @@ nav.tabs svg{width:22px;height:22px}
 #cfmov{z-index:90}#cfmov .sheet{max-width:420px;margin:auto;text-align:center}#cfmov p{margin:6px 0 16px;line-height:1.7}#cfmov .row{gap:10px}#cfmov .row .btn{flex:1}
 #main b,#main h2,#main h3,#main .muted,#main .grow,#layer b,#layer .muted{overflow-wrap:anywhere}#main .row>div,#main .row>.grow{min-width:0}
 .cpl{border-inline-start:4px solid var(--flame)}
+.pmeal{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:10px}.pmeal.full{border-color:var(--ok)}
+.pitem{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}.pitem:first-of-type{border-top:0}
+.ptick{flex:0 0 auto;width:30px;height:30px;border-radius:9px;border:2px solid var(--line);background:transparent;color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pitem.on .ptick{background:var(--ok);border-color:var(--ok)}.pitem.on .pname{text-decoration:line-through;opacity:.6}
+.pbar{height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin:8px 0 2px}.pbar i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.pest{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-inline-start:6px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:40;max-width:90%}
 .modal{position:fixed;inset:0;background:rgba(5,8,16,.6);z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:560px;max-height:86%;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -1819,7 +1825,7 @@ function vPlanEditor(){
   const exN=id=>(EXS.concat(d.T.customEx||[]).find(x=>x.id===id)||{n:id}).n;
   const inp=(path,ph,lab,val)=>{const id='cf_'+path.replace(/\./g,'_');return '<div><label class="f" for="'+id+'">'+lab+'</label><input id="'+id+'" inputmode="decimal" data-cf="'+path+'" placeholder="'+esc(ph)+'" value="'+esc(val==null?'':val)+'"></div>'};
   let h=_('<button class="back" data-act="cplanback">← رجوع (التعديلات محفوظة كمسودة)</button><h2 style="margin-top:4px">خطة ')+esc(c.name||_('العميل'))+'</h2>'+draftBanner(c.uid);
-  h+=aiPlanBox();
+  h+=aiPlanBox();h+=aiOrgBox();
   h+=_('<div class="card"><h3>السعرات والماكروز والمياه</h3><div class="muted" style="margin:4px 0 10px">سيب الخانة فاضية والتطبيق يحسبها تلقائي (الحالي ')+fmt(auto.kcal)+_(' سعر).</div><div class="grid2">')
     +inp('targets.kcal',auto.kcal,_('سعرات يومية'),tg.kcal)+inp('targets.p',auto.p,_('بروتين (جم)'),tg.p)+inp('targets.c',auto.c,_('كارب (جم)'),tg.c)+inp('targets.f',auto.f,_('دهون (جم)'),tg.f)
     +inp('targets.waterL',p.waterL||2.5,_('مياه (لتر)'),tg.waterL)+inp('weekGoal',p.weekGoal||4,_('تمارين في الأسبوع'),e.weekGoal)+'</div></div>';
@@ -1856,7 +1862,7 @@ async function saveClientPlan(){
   const tg=e.targets||{};
   const plan={updated:Date.now(),targets:{kcal:num(tg.kcal),p:num(tg.p),c:num(tg.c),f:num(tg.f),waterL:num(tg.waterL)},weekGoal:num(e.weekGoal),
     trainDays:e.trainDays||[],note:(e.note||'').trim(),
-    meals:(e.meals||[]).map(x=>({id:x.id,meal:x.meal,name:x.name,fid:x.fid||'',g:+x.g||0,u:x.u||'',k:+x.k||0,p:+x.p||0,c:+x.c||0,f:+x.f||0})),program:null};
+    meals:(e.meals||[]).map(x=>({id:x.id,meal:x.meal,name:x.name,fid:x.fid||'',g:+x.g||0,u:x.u||'',k:+x.k||0,p:+x.p||0,c:+x.c||0,f:+x.f||0,q:String(x.q||'').slice(0,40),est:x.est?1:0})),program:null};
   const pg=e.program;
   if(pg&&pg.days.length){
     const days=pg.days.map((x,i)=>({n:(x.n||'').trim()||(_('يوم ')+(i+1)),ex:x.ex.slice()})).filter(x=>x.ex.length);
@@ -3045,6 +3051,78 @@ FX.profgo=function(){S.tab='more';S.sub='set';saveLocal();render();window.scroll
   const r0=render;render=function(){try{tchMig()}catch(e){}const x=r0.apply(this,arguments);
     try{if(!C.user){const n=$('#a_name'),e=$('#a_email');if(n&&!n.value&&U.aName)n.value=U.aName;if(e&&!e.value&&U.aEmail)e.value=U.aEmail}}catch(e){}return x};
   document.addEventListener('input',e=>{const t=e.target;if(!t)return;if(t.id==='a_name')U.aName=t.value;else if(t.id==='a_email')U.aEmail=t.value;else if(t.id==='a_phone')U.pPhone=t.value});
+})();
+
+/* ===== AI diet organizer (coach) + meal check-off (client) + adherence to coach ===== */
+function aiOrgBox(){const v=(U.cc&&U.cc.orgText)||'';
+  return '<div class="card" style="border:1px dashed var(--accent)"><h3 style="margin:0 0 4px">🧾 '+esc(_('نظّم نظام الأكل بالذكاء الاصطناعي'))+'</h3><div class="muted" style="margin-bottom:8px;font-size:13px">'+esc(_('الصق أو اكتب نظام الأكل زي ما هو (وجبات وكميات)، والذكاء الاصطناعي هيقسّمه على الوجبات ويحسب الجرامات والسعرات. تراجعه وتعدّل وبعدين تحفظ.'))+'</div>'
+   +'<textarea id="aio_t" rows="7" maxlength="4000" placeholder="'+esc(_('مثلا:\nفطار: 3 بيضة + 2 توست + خيار\nغداء: 200 جم رز + 150 جم فراخ مشوية + سلطة\nعشا: زبادي يوناني + 30 جم شوفان\nسناك: موزة'))+'" aria-label="'+esc(_('نظام الأكل'))+'">'+esc(v)+'</textarea>'
+   +'<button class="btn block" style="margin-top:8px" data-act="aiorg">'+esc(_('نظّم الأكل'))+'</button><div class="muted" id="aio_s" style="margin-top:6px"></div></div>'}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='aio_t'&&U.cc)U.cc.orgText=e.target.value});
+function mealsFromAi(list){
+  return list.map(x=>{
+    const meal=MEAL_MAP[String(x.meal).toLowerCase().trim()]||'سناكس';
+    const per=v=>v/x.g*100,mine={n:x.name,k:per(x.k),p:per(x.p),c:per(x.c),f:per(x.f),u:'g'};
+    let f=mine;
+    try{const m=foodMatches(x.name,'all',true)[0];if(m&&isFinite(m.k)&&mine.k>0&&Math.abs(m.k-mine.k)/mine.k<.35&&!isSrv(m))f=m}catch(_e){}
+    const e=mealEntry(f,Math.round(x.g),meal);if(x.q)e.q=String(x.q).slice(0,40);if(x.est)e.est=1;return e})
+   .sort((a,b)=>MEALS.indexOf(a.meal)-MEALS.indexOf(b.meal));
+}
+FX.aiorg=async function(d,t){
+  const e=U.cc&&U.cc.edit,c=U.cc&&U.cc.sel;if(!e||!c)return;
+  const text=(($('#aio_t')||{}).value||'').trim();if(text.length<4){toast(_('اكتب نظام الأكل الأول'));return}
+  if((e.meals||[]).length&&!confirm(_('الأكل المنظّم هيستبدل الأكل الموجود في الخطة. تكمل؟')))return;
+  const st=$('#aio_s');t.disabled=true;if(st)st.textContent=_('بنقسّم الأكل… ممكن ياخد نص دقيقة');
+  const r=await aiCall('/organize',{text,lang:LANG});
+  t.disabled=false;
+  if(r.err){if(st)st.textContent=r.err;return}
+  const ed=U.cc.edit;if(!ed)return;
+  ed.meals=mealsFromAi(r.j.meals||[]);
+  if(r.j.note&&!ed.note)ed.note=r.j.note;
+  saveDraft();renderCoachApp();window.scrollTo(0,0);
+  const est=ed.meals.filter(x=>x.est).length;
+  toast(est?_('اتنظّم الأكل. في ')+est+_(' صنف كميته تقديرية، راجعهم وبعدين دوس حفظ الخطة'):_('اتنظّم الأكل. راجعه وبعدين دوس حفظ الخطة'));
+};
+/* ---- client: check off planned meals ---- */
+const planDone=(k,id)=>(S.meals[k]||[]).some(e=>e.pid===id);
+function planStats(k){const pl=activePlan(),L=(pl&&pl.meals)||[];let dn=0;const pm={};
+  L.forEach(x=>{const d=planDone(k,x.id)?1:0;dn+=d;const a=pm[x.meal]||(pm[x.meal]=[0,0]);a[0]+=d;a[1]++});
+  return{L,dn,tot:L.length,pm}}
+planMealsHtml=function(){
+  const pl=activePlan(),L=(pl&&pl.meals)||[];if(!L.length||isCoach())return '';
+  const k=dkey(),st=planStats(k),pct=st.tot?Math.round(st.dn/st.tot*100):0;
+  let h='<h2>'+esc(_('خطة أكلك من المدرب'))+'</h2><div class="card"><div class="row sp"><b>'+esc(_('النهاردة'))+'</b><b class="num">'+st.dn+' / '+st.tot+' · '+pct+'%</b></div><div class="pbar" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+pct+'%"></i></div><div class="muted" style="font-size:12px">'+esc(_('علّم على كل صنف بعد ما تاكله، وهيتسجّل في أكلك النهاردة.'))+'</div>';
+  MEALS.forEach(m=>{const it=L.filter(x=>x.meal===m);if(!it.length)return;
+    const dn=it.filter(x=>planDone(k,x.id)).length,full=dn===it.length;
+    h+='<div class="pmeal'+(full?' full':'')+'"><div class="row sp"><b>'+esc(_(m))+' <span class="muted num" style="font-weight:400">'+dn+'/'+it.length+'</span></b><button class="btn'+(full?' alt':'')+' sm" data-act="ptickmeal" data-v="'+esc(m)+'">'+esc(full?_('✓ الوجبة تمت'):_('تمت الوجبة كلها'))+'</button></div>'
+     +it.map(x=>{const on=planDone(k,x.id);return '<div class="pitem'+(on?' on':'')+'"><button class="ptick" data-act="ptick" data-id="'+esc(x.id)+'" role="checkbox" aria-checked="'+on+'" aria-label="'+esc(mealName(x))+'">'+(on?'✓':'')+'</button><div class="grow"><div class="pname">'+mealLabel(x)+(x.q?' <span class="muted">('+esc(x.q)+')</span>':'')+(x.est?'<span class="pest">'+esc(_('تقديري'))+'</span>':'')+'</div><div class="muted num" style="font-size:12px">'+fmt(x.k)+_(' سعر · ب ')+fmt(x.p)+_(' · ك ')+fmt(x.c)+_(' · د ')+fmt(x.f)+'</div></div></div>'}).join('')+'</div>'});
+  return h+(pl.note?'<div class="muted" style="margin-top:10px;font-size:13px">📝 '+esc(pl.note)+'</div>':'')+'</div>';
+};
+function planTick(x,on){const k=dkey();S.meals[k]=S.meals[k]||[];
+  const has=planDone(k,x.id);
+  if(on&&!has)S.meals[k].push(Object.assign(planItemMeal(x),{pid:x.id}));
+  if(!on&&has)S.meals[k]=S.meals[k].filter(e=>e.pid!==x.id)}
+FX.ptick=function(d){const pl=activePlan(),x=((pl&&pl.meals)||[]).find(y=>y.id===d.id);if(!x)return;
+  planTick(x,!planDone(dkey(),x.id));try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}save();render()};
+FX.ptickmeal=function(d){const pl=activePlan(),it=((pl&&pl.meals)||[]).filter(y=>y.meal===d.v);if(!it.length)return;
+  const k=dkey(),all=it.every(x=>planDone(k,x.id));it.forEach(x=>planTick(x,!all));save();render();toast(all?_('اتلغت علامة الوجبة'):_('اتسجّلت الوجبة'))};
+/* ---- summary for the coach ---- */
+(function(){
+  const t0=todaySnap;todaySnap=function(){const r=t0();if(!r)return r;
+    try{const k=dkey(),st=planStats(k);if(st.tot){r.pd=st.dn;r.pt=st.tot;r.pm=st.pm;
+      r.pdn=st.L.filter(x=>planDone(k,x.id)).slice(0,14).map(x=>String(mealName(x)).slice(0,24))}}catch(e){}return r};
+  const a0=adherence;adherence=function(){const r=a0();if(!r)return r;
+    try{const pl=activePlan(),L=(pl&&pl.meals)||[];if(L.length){let s=0;
+      for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()-i);const k=dkey(d);s+=L.filter(x=>planDone(k,x.id)).length}
+      r.pl=Math.min(100,Math.round(s/(L.length*7)*100))}}catch(e){}return r};
+  const c0=adhCard;adhCard=function(c){const h=c0.apply(this,arguments);if(!h)return h;
+    const s=c.summary||{},a=s.adh||{},t=s.today||{};if(a.pl==null&&!t.pt)return h;
+    let x='';
+    if(a.pl!=null)x+='<div style="margin-top:8px"><div class="row sp" style="font-size:13px"><span>'+esc(_('الالتزام بخطة الأكل'))+'</span><b class="num">'+a.pl+'%</b></div><div class="pbar" style="margin-top:3px"><i style="width:'+a.pl+'%"></i></div></div>';
+    if(t.pt){x+='<div style="margin-top:12px;font-size:13px"><b>'+esc(_('خطة الأكل النهاردة'))+': '+t.pd+' / '+t.pt+'</b><div class="row wrap" style="gap:6px;margin-top:6px">'
+      +MEALS.filter(m=>t.pm&&t.pm[m]).map(m=>{const v=t.pm[m];return '<span class="pill'+(v[0]===v[1]?' good':'')+'">'+esc(_(m))+' '+v[0]+'/'+v[1]+'</span>'}).join('')+'</div>'
+      +((t.pdn&&t.pdn.length)?'<div class="muted" style="margin-top:6px;font-size:12px">'+esc(_('اللي أكله: '))+t.pdn.map(esc).join('، ')+'</div>':'')+'</div>'}
+    return h.replace(/<\/div>$/,x+'</div>')};
 })();
 
 /* ================= init ================= */
