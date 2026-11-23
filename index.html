@@ -141,7 +141,7 @@ nav.tabs svg{width:22px;height:22px}
 .pitem.on .ptick{background:var(--ok);border-color:var(--ok)}.pitem.on .pname{text-decoration:line-through;opacity:.6}
 .pbar{height:8px;border-radius:6px;background:var(--line);overflow:hidden;margin:8px 0 2px}.pbar i{display:block;height:100%;background:var(--ok);transition:width .3s}
 .pest{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 5px;margin-inline-start:6px}
-.setrow{margin:10px 0 4px}.setrow .chips{margin:6px 0 0}
+.approw{margin:12px 0 4px}.approw .chips{margin:8px 0 0;flex-wrap:wrap;overflow:visible}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:40;max-width:90%}
 .modal{position:fixed;inset:0;background:rgba(5,8,16,.6);z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:560px;max-height:86%;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -3132,10 +3132,10 @@ function settingsCard(){
   const t=(S.settings&&S.settings.theme)||'auto';
   const chip=(act,v,l,on)=>'<button class="chip'+(on?' on':'')+'" data-act="'+act+'" data-v="'+v+'" aria-pressed="'+on+'">'+esc(l)+'</button>';
   return '<div class="card" id="setcard"><h3>⚙️ '+esc(_('إعدادات التطبيق'))+'</h3>'
-   +'<div class="setrow"><div class="muted">'+esc(_('شكل التطبيق'))+'</div><div class="chips">'
+   +'<div class="approw"><div class="muted">'+esc(_('شكل التطبيق'))+'</div><div class="chips">'
    +chip('theme','auto',_('زي الموبايل'),t==='auto')+chip('theme','light',_('فاتح'),t==='light')+chip('theme','dark',_('داكن'),t==='dark')+'</div>'
    +'<div class="muted" style="font-size:12px;margin-top:6px">'+esc(_('"زي الموبايل" يتبع إعداد جهازك (فاتح أو داكن) لوحده.'))+'</div></div>'
-   +'<div class="setrow"><div class="muted">'+esc(_('اللغة'))+'</div><div class="chips">'+chip('setlang','ar','العربية',LANG==='ar')+chip('setlang','en','English',LANG==='en')+'</div></div></div>'}
+   +'<div class="approw"><div class="muted">'+esc(_('اللغة'))+'</div><div class="chips">'+chip('setlang','ar','العربية',LANG==='ar')+chip('setlang','en','English',LANG==='en')+'</div></div></div>'}
 FX.setlang=function(d){if(d.v===LANG)return;try{localStorage.setItem('hassanfit.lang',d.v)}catch(e){}location.reload()};
 (function(){const a0=accUi;accUi=function(){a0();
   if(document.getElementById('setcard'))return;
