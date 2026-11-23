@@ -1,5 +1,5 @@
 /* Hassanfit service worker: يخلّي التطبيق يفتح بدون إنترنت، ويجيب النسخة الجديدة لما يكون في نت. */
-const CACHE = 'hassanfit-v31';
+const CACHE = 'hassanfit-v32';
 const SHELL = ['./', 'index.html', 'cloud.js', 'firebase-config.js', 'push-config.js', 'manifest.webmanifest', 'foods.js', 'lang-en.js', 'exercises.js',
   'forma-icon-192.png', 'forma-icon-512.png', 'forma-icon-touch.png'];
 
@@ -18,14 +18,14 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   /* بيانات Firestore والتسجيل لازم تروح مباشرة للسيرفر */
   if (/googleapis\.com$/.test(url.hostname) && !/fonts\./.test(url.hostname)) return;
+  if (url.hostname.endsWith('openfoodfacts.org')) return;
   if (url.hostname.endsWith('firebaseio.com') || url.hostname.endsWith('identitytoolkit.googleapis.com')) return;
 
   if (url.origin === location.origin) {
     /* ملفات التطبيق: النت أولا، ولو مفيش نت من الكاش */
     e.respondWith(
       fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
+        if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
         return res;
       }).catch(() => caches.match(req).then(r => r || caches.match('index.html')))
     );

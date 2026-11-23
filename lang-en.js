@@ -1030,5 +1030,10 @@ window.EN={
 "المسودة هتستبدل الأكل والبرنامج اللي في الخطة الحالية. تكمل؟": "The draft will replace the food and program in the current plan. Continue?",
 "بنجهّز المسودة… ممكن ياخد نص دقيقة": "Preparing the draft… it can take half a minute",
 "مسودة الذكاء الاصطناعي": "AI draft",
-"جهزنا المسودة. راجعها وعدّل وبعدين دوس حفظ الخطة": "The draft is ready. Review and edit it, then tap Save plan"
+"جهزنا المسودة. راجعها وعدّل وبعدين دوس حفظ الخطة": "The draft is ready. Review and edit it, then tap Save plan",
+"إنت أوفلاين — بياناتك محفوظة على جهازك وهتتبعت أول ما النت يرجع": "You're offline — your data is saved on your device and will sync when you're back online",
+"رجع النت": "Back online",
+"في نسخة جديدة من التطبيق": "A new version of the app is available",
+"حدّث دلوقتي": "Update now",
+"حصل خطأ بسيط، جرّب تاني": "Something went wrong, please try again"
 };

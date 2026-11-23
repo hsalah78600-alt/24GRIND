@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com; media-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://hassanfit-push.hsalah78600.workers.dev https://world.openfoodfacts.org https://raw.githubusercontent.com wss://*.firebaseio.com; frame-src https://*.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'; manifest-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="description" content="FORMA - تطبيق لياقة: تمارين، أكل، تقدم، وتواصل مع مدربك">
+<meta name="color-scheme" content="light dark">
 <script>if(window.top!==window.self){document.documentElement.style.display="none";try{window.top.location=window.self.location}catch(e){}}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#EEF2F7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0B1018" media="(prefers-color-scheme: dark)">
@@ -121,6 +123,7 @@ nav.tabs button.on{color:var(--accent)}
 nav.tabs button{position:relative}
 .bdg{position:absolute;top:2px;inset-inline-start:calc(50% + 6px);background:#e5484d;color:#fff;font:700 10px/16px system-ui,sans-serif;min-width:16px;height:16px;border-radius:8px;text-align:center;font-style:normal;padding:0 3px}
 nav.tabs svg{width:22px;height:22px}
+.sysbar{position:fixed;top:0;inset-inline:0;z-index:60;padding:calc(6px + env(safe-area-inset-top,0px)) 14px 6px;font-size:13px;text-align:center;background:var(--fg);color:var(--bg);display:flex;gap:10px;align-items:center;justify-content:center}.sysbar[hidden]{display:none}.sysbar button{background:var(--bg);color:var(--fg);border:0;border-radius:8px;padding:3px 10px;font:inherit;font-weight:700;cursor:pointer}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:40;max-width:90%}
 .modal{position:fixed;inset:0;background:rgba(5,8,16,.6);z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:560px;max-height:86%;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -2432,7 +2435,7 @@ document.addEventListener('change',function(ev){
   else if(t.dataset.sleepsel)setSleep(t.value);
   else if(t.id==='nht'){const u=$('#nhu');if(u)u.disabled=t.value!=='pick'}
 });
-(function(){const st=document.createElement('style');st.textContent='.hsel{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 12px;font-size:14px}.hsel select,.habsel,#slh{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:40px}#slh{width:100%}.hsel select{border:0;background:transparent;max-width:140px}';document.head.appendChild(st)})();
+(function(){const st=document.createElement('style');st.textContent='.hsel{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding-block:3px;padding-inline:12px 4px;font-size:14px}.hsel select,.habsel,#slh{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);min-height:40px}#slh{width:100%}.hsel select{border:0;background:transparent;max-width:140px}';document.head.appendChild(st)})();
 
 /* ===== any entry counts as activity; adherence; auto-sync ===== */
 function allActiveDates(){
@@ -2441,7 +2444,7 @@ function allActiveDates(){
   Object.keys(S.water||{}).forEach(k=>{if(+S.water[k]>0)s.add(k)});
   Object.keys(S.sleep||{}).forEach(k=>{if(S.sleep[k]&&+S.sleep[k].h>0)s.add(k)});
   Object.keys(S.mood||{}).forEach(k=>{if(S.mood[k])s.add(k)});
-  ((S.habits&&S.habits.log)||{});Object.keys((S.habits&&S.habits.log)||{}).forEach(k=>{if((S.habits.log[k]||[]).length)s.add(k)});
+  Object.keys((S.habits&&S.habits.log)||{}).forEach(k=>{if((S.habits.log[k]||[]).length)s.add(k)});
   (S.weights||[]).forEach(w=>w.date&&s.add(w.date));(S.measures||[]).forEach(w=>w.date&&s.add(w.date));
   return s;
 }
@@ -2887,13 +2890,35 @@ FX.aiplan=async function(d,t){
   toast(_('جهزنا المسودة. راجعها وعدّل وبعدين دوس حفظ الخطة'));
 };
 
+/* ===== professional polish: offline bar, update banner, error safety net ===== */
+function sysBar(id,html){let b=document.getElementById(id);if(!b){b=document.createElement('div');b.id=id;b.className='sysbar';b.setAttribute('role','status');document.body.appendChild(b)}b.innerHTML=html;b.hidden=false;return b}
+function sysHide(id){const b=document.getElementById(id);if(b)b.hidden=true}
+function offlineUi(){
+  if(navigator.onLine===false)sysBar('offb','<span>'+esc(_('إنت أوفلاين — بياناتك محفوظة على جهازك وهتتبعت أول ما النت يرجع'))+'</span>');
+  else if(document.getElementById('offb')&&!document.getElementById('offb').hidden){sysHide('offb');toast(_('رجع النت'));try{if(typeof schedSync==='function'&&C.user&&!isCoach())schedSync()}catch(e){}}
+}
+window.addEventListener('offline',offlineUi);window.addEventListener('online',offlineUi);
+function sysUpdate(){sysBar('updb','<span>'+esc(_('في نسخة جديدة من التطبيق'))+'</span><button type="button" id="updgo">'+esc(_('حدّث دلوقتي'))+'</button>');
+  const g=document.getElementById('updgo');if(g)g.onclick=()=>location.reload()}
+(function(){let last=0;
+  const soft=m=>{const s=String(m||'');if(/ResizeObserver|AbortError|The user aborted|NotAllowedError|play\(\) request/i.test(s))return;
+    try{console.error('[forma]',s)}catch(e){}
+    const t=Date.now();if(t-last<6000)return;last=t;try{toast(_('حصل خطأ بسيط، جرّب تاني'))}catch(e){}};
+  window.addEventListener('unhandledrejection',e=>soft(e.reason&&(e.reason.message||e.reason)));
+  window.addEventListener('error',e=>{if(e.target&&e.target!==window)return;soft(e.message)});
+})();
+setTimeout(offlineUi,0);
+window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
+
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
 applyTheme();
 if(S.active&&S.active.start&&Date.now()-S.active.start>12*3600e3){S.active=null}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();U.deferred=e;if(S.tab==='home'&&!isCoach())render()});
 window.addEventListener('appinstalled',()=>{U.deferred=null;S.settings.hideInstall=true;saveLocal()});
-if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+  const hadCtl=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadCtl||reloaded)return;reloaded=true;if(window.sysUpdate)sysUpdate()})}
 render();
 let started=false;
 function startApp(){
