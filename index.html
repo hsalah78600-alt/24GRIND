@@ -14,8 +14,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="FORMA">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="forma-icon-touch.png">
-<link rel="icon" href="forma-icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="forma-icon-touch.png?v=3">
+<link rel="icon" type="image/png" sizes="192x192" href="forma-icon-192.png?v=3">
 <title>FORMA</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700&family=Readex+Pro:wght@700&family=Kanit:ital,wght@1,900&display=swap">
 <style>
@@ -677,7 +677,7 @@ function ntAlert(it){
   try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
   try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.05;o.start();o.stop(a.currentTime+.14)}catch(e){}
   try{if(document.hidden&&!pushOn()&&window.Notification&&Notification.permission==='granted'){
-    const o={body:it.txt,icon:'forma-icon-192.png',tag:it.id};
+    const o={body:it.txt,icon:'forma-icon-192.png?v=3',tag:it.id};
     if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification('Forma',o)).catch(()=>{});else new Notification('Forma',o)}}catch(e){}
 }
 function ntPush(it){

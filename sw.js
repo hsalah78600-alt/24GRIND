@@ -1,5 +1,5 @@
 /* Hassanfit service worker: يخلّي التطبيق يفتح بدون إنترنت، ويجيب النسخة الجديدة لما يكون في نت. */
-const CACHE = 'hassanfit-v32';
+const CACHE = 'hassanfit-v33';
 const SHELL = ['./', 'index.html', 'cloud.js', 'firebase-config.js', 'push-config.js', 'manifest.webmanifest', 'foods.js', 'lang-en.js', 'exercises.js',
   'forma-icon-192.png', 'forma-icon-512.png', 'forma-icon-touch.png'];
 
@@ -54,7 +54,7 @@ self.addEventListener('push', e => {
     const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     if (cs.some(c => c.visibilityState === 'visible')) return; /* التطبيق قدامه: الإشعار جوه التطبيق كفاية */
     await self.registration.showNotification(d.title || 'Hassanfit', {
-      body: d.body || '', icon: 'forma-icon-192.png', badge: 'forma-icon-192.png',
+      body: d.body || '', icon: 'forma-icon-192.png?v=3', badge: 'forma-icon-192.png?v=3',
       tag: d.tag || 'hf', renotify: true, data: { url: d.url || './' }
     });
   })());
