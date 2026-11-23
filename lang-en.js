@@ -1035,5 +1035,20 @@ window.EN={
 "رجع النت": "Back online",
 "في نسخة جديدة من التطبيق": "A new version of the app is available",
 "حدّث دلوقتي": "Update now",
-"حصل خطأ بسيط، جرّب تاني": "Something went wrong, please try again"
+"حصل خطأ بسيط، جرّب تاني": "Something went wrong, please try again",
+"الإصدار": "Version",
+"عملاؤك في مكان واحد": "All your clients in one place",
+"تابع التزام كل عميل وآخر نشاط له واشتراكه من شاشة واحدة.": "Track each client's adherence, last activity and subscription from one screen.",
+"خطط جاهزة بسرعة": "Plans, fast",
+"اعمل خطة أكل وتمرين لكل عميل، أو اطلب مسودة بالذكاء الاصطناعي. وأي تعديل تخرج منه من غير حفظ بيتحفظ كمسودة.": "Build a meal and training plan for each client, or ask AI for a draft. Any edits you leave unsaved are kept as a draft.",
+"تواصل وتجديدات": "Messaging & renewals",
+"ابعت رسالة جماعية، ذكّر الغايبين، وجدّد الاشتراكات بضغطة.": "Send a broadcast, remind inactive clients and renew subscriptions in one tap.",
+"سجّل يومك": "Log your day",
+"تمرينك وأكلك ومياهك ونومك وعاداتك، كل حاجة في مكانها.": "Your workouts, food, water, sleep and habits, all in one place.",
+"مدربك معاك": "Your coach is with you",
+"بياناتك بتتجمّع وتوصل لمدربك تلقائي من أي قسم، من غير ما تفتكر تبعتها.": "Your data is collected and reaches your coach automatically from any section, with nothing to remember to send.",
+"خليك على اتصال": "Stay connected",
+"فعّل التنبيهات من حسابك، وثبّت التطبيق على الشاشة الرئيسية.": "Turn on notifications from your account and install the app on your home screen.",
+"التالي": "Next",
+"تخطّي": "Skip"
 };
