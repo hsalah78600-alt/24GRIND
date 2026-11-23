@@ -1050,5 +1050,18 @@ window.EN={
 "خليك على اتصال": "Stay connected",
 "فعّل التنبيهات من حسابك، وثبّت التطبيق على الشاشة الرئيسية.": "Turn on notifications from your account and install the app on your home screen.",
 "التالي": "Next",
-"تخطّي": "Skip"
+"تخطّي": "Skip",
+"مفيش نتايج مطابقة.": "No matching results.",
+"ابحث بالاسم أو الإيميل أو الرقم": "Search by name, email or number",
+"بحث في العملاء": "Search clients",
+"محتاج متابعة": "Needs follow-up",
+"قرب ينتهي": "Expiring soon",
+"منتهي": "Expired",
+"لسه مفيش بيانات للأسبوع ده": "No data for this week yet",
+"صباح الخير": "Good morning",
+"أهلاً بيك": "Welcome back",
+"مساء الخير": "Good evening",
+"مدربك: ": "Your coach: ",
+"إجمالي العملاء على المنصة": "Total clients on the platform",
+"مدربين اشتراكهم قرب يخلص": "Coaches expiring soon"
 };

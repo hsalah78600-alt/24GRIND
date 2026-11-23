@@ -128,6 +128,8 @@ nav.tabs svg{width:22px;height:22px}
 .aboutf{text-align:center;color:var(--muted);font-size:12px;padding:14px 0 6px}
 .tour{text-align:center;padding:6px 4px 2px}.tour .em{font-size:52px;line-height:1.1;margin:8px 0}.tour h3{margin:6px 0}.tour .dots{display:flex;gap:6px;justify-content:center;margin:14px 0}.tour .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.tour .dots i.on{background:var(--flame);width:20px;border-radius:4px}
 @media (prefers-reduced-motion:no-preference){#splash i:after{animation:spl 1s ease-in-out infinite alternate}@keyframes spl{from{transform:translateX(-100%)}to{transform:translateX(250%)}}.btn,.tabs button,.item,.chip{transition:transform .12s,background-color .15s}.btn:active,.tabs button:active,.item:active{transform:scale(.97)}#main.pg{animation:pgin .22s ease-out}@keyframes pgin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}}
+.recbar[hidden],.recbar:empty{display:none}
+.greet{margin:2px 2px 12px}.greet b{font-size:20px}.cfrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}.cfrow::-webkit-scrollbar{display:none}.cfrow .btn{flex:0 0 auto;white-space:nowrap}.cfq{margin:4px 0 8px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:40;max-width:90%}
 .modal{position:fixed;inset:0;background:rgba(5,8,16,.6);z-index:30;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:560px;max-height:86%;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -1737,10 +1739,11 @@ function vClients0(){
   const idleOf=c=>{const la=(c.summary||{}).lastActive;return la?Math.round((today-parseKey(la))/864e5):null};
   const need=L.filter(c=>{const d=idleOf(c);return d===null||d>=3}).length;
   h+='<div class="grid3" style="margin-bottom:12px"><div class="stat"><b>'+L.length+_('</b><span>عميل</span></div><div class="stat"><b>')+(L.length-need)+_('</b><span>نشطين</span></div><div class="stat"><b>')+need+_('</b><span>محتاج متابعة</span></div></div>');
-  h+=bcTools(L,idleOf);
-  const GO={m:0,f:1,u:2};L.sort((a,b)=>GO[sexOf(a)]-GO[sexOf(b)]);
-  const GC={m:0,f:0,u:0};L.forEach(x=>GC[sexOf(x)]++);let lastG=null;
-  L.forEach(c=>{
+  h+=bcTools(L,idleOf);h+=cfBar(L,idleOf);const LF=cfApply(L,idleOf);
+  if(!LF.length)h+='<div class="card muted" style="text-align:center">'+_('مفيش نتايج مطابقة.')+'</div>';
+  const GO={m:0,f:1,u:2};LF.sort((a,b)=>GO[sexOf(a)]-GO[sexOf(b)]);
+  const GC={m:0,f:0,u:0};LF.forEach(x=>GC[sexOf(x)]++);let lastG=null;
+  LF.forEach(c=>{
     const g=sexOf(c);if(g!==lastG){lastG=g;h+='<h3 style="margin:16px 0 8px">'+(g==='m'?_('العملاء الذكور'):g==='f'?_('العميلات الإناث'):_('غير محدد'))+' ('+GC[g]+')</h3>'}
     const s=c.summary||{},idle=idleOf(c);
     const pill=idle===null?_('<span class="pill bad">لسه مبدأش</span>'):idle===0?_('<span class="pill good">نشط النهاردة</span>'):idle>=3?_('<span class="pill bad">من ')+idle+_n(idle,' يوم</span>'):_('<span class="pill">من ')+idle+_n(idle,' يوم</span>');
@@ -2947,6 +2950,42 @@ const tourTimer=setInterval(()=>{
   if(tourSeen()){clearInterval(tourTimer);return}
   try{if(!C.user||!C.profile||document.getElementById('fxov')||U.modal||gate())return}catch(e){return}
   clearInterval(tourTimer);tourDone();TOUR_I=0;tourRender()},1500);
+
+/* ===== role polish: coach search/filters, admin summary, client greeting, empty states ===== */
+const cfSt=()=>U.cc.cf||(U.cc.cf={q:'',f:'all'});
+const CF_DEF=[['all','الكل'],['need','محتاج متابعة'],['soon','قرب ينتهي'],['expired','منتهي'],['pending','في الانتظار']];
+function cfMatch(c,f,idleOf){
+  if(f==='all')return true;
+  if(f==='need'){const d=idleOf(c);return d===null||d>=3}
+  const st=accState(c);
+  if(f==='soon')return st==='active'&&daysLeft(effUntil(c))<=7;
+  return st===f;
+}
+function cfApply(L,idleOf){const s=cfSt(),q=(s.q||'').trim().toLowerCase();
+  return L.filter(c=>cfMatch(c,s.f,idleOf)&&(!q||((c.name||'')+' '+(c.email||'')+' '+(c.phone||'')).toLowerCase().includes(q)))}
+function cfBar(L,idleOf){const s=cfSt();if(L.length<4&&!s.q&&s.f==='all')return '';
+  return '<input id="cfq" class="cfq" type="search" enterkeyhint="search" autocomplete="off" maxlength="40" placeholder="'+esc(_('ابحث بالاسم أو الإيميل أو الرقم'))+'" aria-label="'+esc(_('بحث في العملاء'))+'" value="'+esc(s.q||'')+'">'
+   +'<div class="cfrow" role="group">'+CF_DEF.map(x=>{const n=L.filter(c=>cfMatch(c,x[0],idleOf)).length;return '<button class="btn sm'+(s.f===x[0]?'':' line')+'" data-act="cff" data-v="'+x[0]+'">'+esc(_(x[1]))+' ('+n+')</button>'}).join('')+'</div>'}
+FX.cff=function(d){cfSt().f=d.v;renderCoachApp()};
+document.addEventListener('input',e=>{const t=e.target;if(!t||t.id!=='cfq')return;
+  cfSt().q=t.value;const pos=t.selectionStart;renderCoachApp();const n=$('#cfq');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_e){}}});
+/* header sync status only matters to clients */
+(function(){const s0=setSync;setSync=function(){s0.apply(this,arguments);if(isCoach()){const el=$('#sync');if(el)el.textContent=''}}})();
+/* weekly chart empty state */
+(function(){const b0=bars;bars=function(vals){if(!vals.some(v=>v>0))return '<div class="muted" style="text-align:center;padding:22px 0">'+esc(_('لسه مفيش بيانات للأسبوع ده'))+'</div>';return b0.apply(this,arguments)}})();
+/* client greeting */
+(function(){const h0=vHome;vHome=function(){const h=h0.apply(this,arguments);
+  const nm=((C.profile&&C.profile.name)||(S.profile&&S.profile.name)||'').trim().split(/\s+/)[0];
+  const hr=new Date().getHours(),g=hr<12?_('صباح الخير'):hr<18?_('أهلاً بيك'):_('مساء الخير');
+  const co=C.profile&&C.profile.coachName;
+  return '<div class="greet"><b>'+esc(g+(nm?'، '+nm:''))+' 👋</b>'+(co?'<div class="muted">'+esc(_('مدربك: ')+co)+'</div>':'')+'</div>'+h}})();
+/* admin overview strip */
+(function(){const a0=vAdmin;vAdmin=function(){const h=a0.apply(this,arguments);
+  const me=C.user&&C.user.uid,L=(C.coaches||[]).filter(c=>c.uid!==me);if(!L.length)return h;
+  const tot=L.reduce((a,c)=>a+(+((C.cnt||{})[c.uid])||0),0);
+  const soon=L.filter(c=>accState(c)==='active'&&daysLeft(effUntil(c))<=7).length;
+  const strip='<div class="card" style="display:flex;gap:18px;flex-wrap:wrap"><div><div class="muted">'+esc(_('إجمالي العملاء على المنصة'))+'</div><b style="font-size:22px">'+tot+'</b></div><div><div class="muted">'+esc(_('مدربين اشتراكهم قرب يخلص'))+'</div><b style="font-size:22px">'+soon+'</b></div></div>';
+  return h.replace('</h2>','</h2>'+strip)}})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
