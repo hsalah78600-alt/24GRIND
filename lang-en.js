@@ -1172,5 +1172,6 @@ window.EN={
 "ابحث عن مدرب بالاسم أو الإيميل أو الرقم أو الـ ID": "Search coaches by name, email, phone or ID",
 "رقم الـ ID بتاعك": "Your ID",
 "ابعته لأي حد يدوّر عليك أو لو احتجت دعم.": "Share it with anyone looking for you, or if you need support.",
-"ابعته لمدربك أو للدعم عشان يلاقوك بسرعة.": "Share it with your coach or support so they can find you fast."
+"ابعته لمدربك أو للدعم عشان يلاقوك بسرعة.": "Share it with your coach or support so they can find you fast.",
+"اقتراحات الأسماء": "Name suggestions"
 };
