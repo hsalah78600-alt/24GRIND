@@ -3315,7 +3315,7 @@ function payInboxInner(){
   if(!pend.length&&!done.length)return '';
   let h='<div class="card"'+(pend.length?' style="border:1px solid var(--flame)"':'')+'><h3 style="margin:0 0 4px">💳 '+esc(_('طلبات الاشتراك'))+(pend.length?' ('+pend.length+')':'')+'</h3>';
   if(!pend.length)h+='<div class="muted">'+esc(_('مفيش طلبات جديدة.'))+'</div>';
-  pend.forEach(r=>{h+='<div class="payreq"><div class="row" style="gap:12px;align-items:flex-start"><img class="payshot" alt="'+esc(_('سكرين شوت التحويل'))+'" src="'+esc(r.shot||'')+'" data-act="payzoom" data-id="'+esc(r.id)+'"><div class="grow" style="min-width:0"><b>'+esc(r.name||'')+'</b> <span class="muted" style="font-size:12px">'+esc(r.role==='coach'?_('مدرب'):_('عميل'))+'</span>'
+  pend.forEach(r=>{h+='<div class="payreq"><div class="row" style="gap:12px;align-items:flex-start"><img class="payshot" alt="'+esc(_('سكرين شوت التحويل'))+'" src="'+esc(r.shot||'')+'" data-act="payzoom" data-id="'+esc(r.id)+'"><div class="grow" style="min-width:0"><b>'+esc(r.name||'')+'</b> <span class="muted" style="font-size:12px">'+esc(r.role==='coach'?_('مدرب'):_('عميل'))+'</span>'+(typeof pidOf==='function'?pidBadge({uid:r.from,role:r.role}):'')
     +'<div>'+esc(payMonthsTxt(r.months))+' · <b>'+esc(r.amount)+'</b></div><div class="muted" style="font-size:12px;overflow-wrap:anywhere">'+esc(r.method||'')+' · '+esc(_('من: '))+'<span dir="ltr">'+esc(r.senderNo||'')+'</span></div>'
     +'<div class="muted" style="font-size:12px">'+esc(_('موبايل: '))+'<span dir="ltr">'+esc(r.phone||'')+'</span> · '+esc(payTime(r.ts))+'</div>'+(r.note?'<div class="muted" style="font-size:12px">'+esc(r.note)+'</div>':'')+'</div></div>'
     +'<button class="btn block" style="margin-top:10px" data-act="payok" data-id="'+esc(r.id)+'">✓ '+esc(_('تفعيل '))+esc(payMonthsTxt(r.months))+'</button><div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">'
@@ -3392,6 +3392,40 @@ function payAcctCard(){
   /* leaving through the bottom nav closes the page */
   document.addEventListener('click',function(e){if(U.payOpen&&e.target.closest&&e.target.closest('#nav button'))U.payOpen=false},true);
 })();
+
+/* ===== short ID for every client (C-xxxxxx) and coach (T-xxxxxx) — searchable ===== */
+(function(){const st=document.createElement('style');
+st.textContent='.pid{display:inline-block;margin-inline-start:6px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);font:600 11px/1.6 ui-monospace,Menlo,Consolas,monospace;direction:ltr;unicode-bidi:isolate;color:var(--muted);vertical-align:middle;white-space:nowrap}.pidbig{font:800 24px/1.3 ui-monospace,Menlo,Consolas,monospace;direction:ltr;letter-spacing:1px}';
+document.head.appendChild(st)})();
+function pidOf(p){
+  const uid=typeof p==='string'?p:(p&&p.uid)||'';if(!uid)return '';
+  const coach=typeof p==='object'&&(p.role==='coach'||(typeof isAdminUser==='function'&&p.email&&p.email===(C.user&&C.user.email)&&isAdminUser()));
+  let h=2166136261;for(let i=0;i<uid.length;i++){h^=uid.charCodeAt(i);h=Math.imul(h,16777619)>>>0}
+  return (coach?'T-':'C-')+String(h%900000+100000)}
+const pidKey=p=>{const x=pidOf(p);return (x+' '+x.replace('-','')).toLowerCase()};
+/* client search (coach tab) also matches the ID */
+cfApply=function(L,idleOf){const s=cfSt(),q=(s.q||'').trim().toLowerCase();
+  return L.filter(c=>cfMatch(c,s.f,idleOf)&&(!q||((c.name||'')+' '+(c.email||'')+' '+(c.phone||'')+' '+pidKey(c)).toLowerCase().includes(q)))};
+/* admin coach search */
+admFilter=function(){const q=(U.admq||'').trim().toLowerCase();
+  document.querySelectorAll('#main .card').forEach(c=>{const b=c.querySelector('[data-act="achat"]');if(!b)return;
+    const co=(C.coaches||[]).find(x=>x.uid===b.dataset.id)||{uid:b.dataset.id,role:'coach'};
+    c.style.display=(!q||(c.textContent+' '+pidKey(Object.assign({},co,{role:'coach'}))).toLowerCase().includes(q))?'':'none'})};
+function pidBadge(p){return '<span class="pid" title="ID">'+esc(pidOf(p))+'</span>'}
+function pidPaint(){
+  const m=document.getElementById('main');if(!m)return;
+  m.querySelectorAll('[data-act="copen"][data-id]').forEach(b=>{if(b.querySelector('.pid'))return;const c=(C.clients||[]).find(x=>x.uid===b.dataset.id);const t=b.querySelector('b');if(c&&t)t.insertAdjacentHTML('afterend',pidBadge(Object.assign({},c,{role:'client'})))});
+  m.querySelectorAll('[data-act="achat"][data-id]').forEach(b=>{const card=b.closest('.card');if(!card||card.querySelector('.pid'))return;const c=(C.coaches||[]).find(x=>x.uid===b.dataset.id);const t=card.querySelector('b');if(c&&t)t.insertAdjacentHTML('afterend',pidBadge(Object.assign({},c,{role:'coach'})))});
+  if(U.cc&&U.cc.sel&&!U.cc.edit&&!m.querySelector('#pidsel')){const c=U.cc.sel;m.insertAdjacentHTML('afterbegin','<div id="pidsel" class="muted" style="margin-bottom:8px">ID: <span class="pid" style="margin:0">'+esc(pidOf(Object.assign({},c,{role:c.role||'client'})))+'</span></div>')}
+  /* own ID card on the account page */
+  const so=m.querySelector('[data-act="signout"]');if(so&&C.user&&C.profile&&!document.getElementById('pidcard')){
+    const me=Object.assign({},C.profile,{uid:C.user.uid});const card=so.closest('.card')||so;
+    card.insertAdjacentHTML('beforebegin','<div class="card" id="pidcard"><h3>🆔 '+esc(_('رقم الـ ID بتاعك'))+'</h3><div class="row sp"><div class="pidbig">'+esc(pidOf(me))+'</div><button class="btn line sm" data-act="paycopy" data-v="'+esc(pidOf(me))+'">'+esc(_('نسخ'))+'</button></div><div class="muted" style="font-size:12px;margin-top:6px">'+esc(isCoach()?_('ابعته لأي حد يدوّر عليك أو لو احتجت دعم.'):_('ابعته لمدربك أو للدعم عشان يلاقوك بسرعة.'))+'</div></div>')}
+  const q1=document.getElementById('cfq');if(q1)q1.placeholder=_('ابحث بالاسم أو الإيميل أو الرقم أو الـ ID');
+  const q2=document.getElementById('adq');if(q2)q2.placeholder=_('ابحث عن مدرب بالاسم أو الإيميل أو الرقم أو الـ ID');
+}
+(function(){const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{pidPaint()}catch(e){}return x};
+  const r=render;render=function(){const x=r.apply(this,arguments);try{pidPaint()}catch(e){}return x}})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});

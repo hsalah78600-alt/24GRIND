@@ -1167,5 +1167,10 @@ window.EN={
 "نسخ": "Copy",
 "هيتفعّل أول ما يتأكد من التحويل. ممكن تلغيه من «طلباتي» وتبعت تاني.": "It will be activated as soon as the transfer is confirmed. You can cancel it from “My requests” and send again.",
 "هيتفعّل حسابك بعد ما يتأكد من التحويل.": "Your account will be activated once the transfer is confirmed.",
-"وصلك طلب اشتراك جديد": "You got a new subscription request"
+"وصلك طلب اشتراك جديد": "You got a new subscription request",
+"ابحث بالاسم أو الإيميل أو الرقم أو الـ ID": "Search by name, email, phone or ID",
+"ابحث عن مدرب بالاسم أو الإيميل أو الرقم أو الـ ID": "Search coaches by name, email, phone or ID",
+"رقم الـ ID بتاعك": "Your ID",
+"ابعته لأي حد يدوّر عليك أو لو احتجت دعم.": "Share it with anyone looking for you, or if you need support.",
+"ابعته لمدربك أو للدعم عشان يلاقوك بسرعة.": "Share it with your coach or support so they can find you fast."
 };
