@@ -3190,6 +3190,209 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)
   if(document.getElementById('cfmov')||document.getElementById('fxov'))return;
   const b=document.querySelector('#layer [data-act="closemodal"]');if(b){e.preventDefault();b.click()}});
 
+/* ===== subscription / renewal: pay → screenshot → receiver activates ===== */
+(function(){const st=document.createElement('style');
+st.textContent='.pmeth{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;background:var(--surface2)}.pmeth .pn{font-weight:800;font-size:17px;letter-spacing:.5px;direction:ltr;unicode-bidi:plaintext;overflow-wrap:anywhere}.pmeth .grow{min-width:0}.paystat{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid var(--line)}.paystat.ok{color:var(--ok);border-color:var(--ok)}.paystat.no{color:var(--danger);border-color:var(--danger)}.paystat.wt{color:var(--flame);border-color:var(--flame)}.payshot{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}.payshotbig{max-width:100%;max-height:100%;border-radius:12px}#payzoom{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.payf label.f{display:block;margin:12px 0 4px}.payf input,.payf select,.payf textarea{width:100%}.paysteps{counter-reset:s}.payreq{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;background:var(--surface)}.paymo .chip{min-width:72px}';
+document.head.appendChild(st)})();
+
+const PAYT={vf:'فودافون كاش',ip:'إنستاباي',ot:'محفظة أخرى',bk:'حساب بنكي'};
+C.payIn=C.payIn||[];C.payOut=C.payOut||[];
+U.pay=U.pay||{months:1,shot:null,info:undefined,busy:false};
+const payToUid=()=>isCoach()?((C.adminInfo&&C.adminInfo.uid)||null):((C.profile&&C.profile.coachId)||null);
+const payToName=()=>isCoach()?((C.adminInfo&&C.adminInfo.name)||_('الإدارة')):((C.coach&&C.coach.name)||_('المدرب'));
+const payCanUse=()=>!!(C.user&&C.profile&&!isAdminUser()&&(isCoach()||C.profile.coachId));
+const payMonthsTxt=m=>m===1?_('شهر'):m===2?_('شهرين'):m+' '+_('شهور');
+const payTime=ts=>{try{return AR(new Date(ts),{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}catch(e){return ''}};
+const payStat=s=>s==='approved'?'<span class="paystat ok">✓ '+esc(_('اتفعّل'))+'</span>':s==='rejected'?'<span class="paystat no">✕ '+esc(_('اترفض'))+'</span>':'<span class="paystat wt">⏳ '+esc(_('بيتراجع'))+'</span>';
+
+/* ---------- watchers ---------- */
+function payStart(){
+  if(!C.user||!C.profile){if(C._payW){(C._payU||[]).forEach(u=>{try{u&&u()}catch(e){}});C._payW=null;C._payU=[];C.payIn=[];C.payOut=[]}return}
+  const uid=C.user.uid;if(C._payW===uid||!CLOUD.watchPayReqs)return;
+  (C._payU||[]).forEach(u=>{try{u&&u()}catch(e){}});C._payU=[];C._payW=uid;let first=true,prev=0;
+  Promise.resolve(CLOUD.watchPayReqs('to',uid,l=>{C.payIn=l;const n=l.filter(r=>r.status==='pending').length;
+    if(!first&&n>prev)toast(_('وصلك طلب اشتراك جديد'));first=false;prev=n;payInboxPaint()})).then(u=>C._payU.push(u)).catch(()=>{});
+  let seen=null;
+  Promise.resolve(CLOUD.watchPayReqs('from',uid,l=>{
+    if(seen){l.forEach(r=>{const o=seen[r.id];if(o&&o!==r.status){if(r.status==='approved')toast(_('اشتراكك اتفعّل ✓'));else if(r.status==='rejected')toast(_('طلب الاشتراك اترفض'))}})}
+    seen={};l.forEach(r=>seen[r.id]=r.status);C.payOut=l;payHistPaint()})).then(u=>C._payU.push(u)).catch(()=>{});
+}
+
+/* ---------- sender page ---------- */
+function payMethodsHtml(){
+  const info=U.pay.info;
+  if(info===undefined)return '<div class="muted">'+esc(_('بيحمّل بيانات الدفع…'))+'</div>';
+  const ms=(info&&info.methods)||[];
+  if(!ms.length)return '<div class="muted">'+esc(_('لسه ما اتحطّتش بيانات الدفع. كلّم ')+payToName()+_(' يبعتلك رقم التحويل.'))+'</div>';
+  return ms.map((m,i)=>'<div class="pmeth"><div class="grow"><div class="muted" style="font-size:12px">'+esc(_(PAYT[m.t]||PAYT.ot))+(m.h?' · '+esc(m.h):'')+'</div><div class="pn">'+esc(m.n)+'</div></div><button class="btn line sm" type="button" data-act="paycopy" data-v="'+esc(m.n)+'">'+esc(_('نسخ'))+'</button></div>').join('')
+    +((info&&info.note)?'<div class="muted" style="margin-top:10px;white-space:pre-wrap">'+esc(info.note)+'</div>':'');
+}
+function payStatusHtml(){
+  const p=C.profile||{},u=effUntil(p),s=accState(p);
+  if(s==='active'){const d=daysLeft(u);return '<div class="card"><b>'+esc(_('اشتراكك ساري لحد '))+fmtD(u)+'</b><div class="muted">'+d+' '+esc(_n(d,' يوم'))+' '+esc(_('متبقية. لو جدّدت دلوقتي المدة بتتضاف على الباقي.'))+'</div></div>'}
+  if(s==='expired')return '<div class="card" style="border:1px solid var(--danger)"><b>'+esc(_('اشتراكك انتهى'))+'</b><div class="muted">'+esc(_('بياناتك كلها محفوظة وهترجع بعد التفعيل.'))+'</div></div>';
+  if(s==='blocked')return '<div class="card" style="border:1px solid var(--danger)"><b>'+esc(_('الحساب موقوف'))+'</b></div>';
+  return '<div class="card"><b>'+esc(_('في انتظار التفعيل'))+'</b><div class="muted">'+esc(_('ادفع وابعت السكرين شوت وهيتفعّل حسابك.'))+'</div></div>';
+}
+function payHistHtml(){
+  const L=C.payOut||[];if(!L.length)return '';
+  return '<div class="card"><h3>'+esc(_('طلباتي'))+'</h3>'+L.slice(0,8).map(r=>'<div class="payreq"><div class="row sp"><b>'+esc(payMonthsTxt(r.months))+' · '+esc(r.amount)+'</b>'+payStat(r.status)+'</div><div class="muted" style="font-size:12px">'+esc(payTime(r.ts))+(r.note&&r.status==='rejected'?' · '+esc(r.note):'')+'</div>'
+    +(r.status==='pending'?'<button class="btn line sm" style="margin-top:8px" data-act="paycancel" data-id="'+esc(r.id)+'">'+esc(_('إلغاء الطلب'))+'</button>':'')+'</div>').join('')+'</div>';
+}
+function payHtml(){
+  const p=C.profile||{},pend=(C.payOut||[]).some(r=>r.status==='pending');
+  const mo=U.pay.months,chip=m=>'<button type="button" class="chip'+(mo===m?' on':'')+'" data-act="paymo" data-v="'+m+'" aria-pressed="'+(mo===m)+'">'+esc(payMonthsTxt(m))+'</button>';
+  const ms=(U.pay.info&&U.pay.info.methods)||[];
+  return '<div class="row sp" style="margin-bottom:10px"><h2 style="margin:0">'+esc(_('اشتراك / تجديد'))+'</h2><button class="btn line sm" data-act="payback">'+esc(_('رجوع'))+'</button></div>'
+   +payStatusHtml()
+   +'<div class="card"><h3>1) '+esc(_('حوّل المبلغ لـ '))+esc(payToName())+'</h3><div id="paymeths">'+payMethodsHtml()+'</div></div>'
+   +(pend?'<div class="card" style="border:1px solid var(--flame)"><b>'+esc(_('طلبك الأخير لسه بيتراجع'))+'</b><div class="muted">'+esc(_('هيتفعّل أول ما يتأكد من التحويل. ممكن تلغيه من «طلباتي» وتبعت تاني.'))+'</div></div>':
+   '<form class="card payf" id="payf" onsubmit="return false"><h3>2) '+esc(_('املى بياناتك'))+'</h3>'
+   +'<label class="f" for="pn">'+esc(_('الاسم'))+'</label><input id="pn" maxlength="80" autocomplete="name" value="'+esc(p.name||'')+'">'
+   +'<label class="f" for="pp">'+esc(_('رقم موبايلك'))+'</label><input id="pp" maxlength="25" inputmode="tel" autocomplete="tel" value="'+esc(p.phone||'')+'">'
+   +'<label class="f">'+esc(_('مدة الاشتراك'))+'</label><div class="chips paymo" id="paymo">'+chip(1)+chip(2)+chip(3)+chip(6)+'</div>'
+   +'<label class="f" for="pa">'+esc(_('المبلغ اللي حوّلته'))+'</label><input id="pa" inputmode="decimal" maxlength="9" placeholder="">'
+   +'<label class="f" for="pm">'+esc(_('حوّلت عن طريق'))+'</label><select id="pm">'+ms.map(m=>'<option value="'+esc(_(PAYT[m.t]||PAYT.ot))+'">'+esc(_(PAYT[m.t]||PAYT.ot))+'</option>').join('')+'<option value="'+esc(_('أخرى'))+'">'+esc(_('أخرى'))+'</option></select>'
+   +'<label class="f" for="ps">'+esc(_('رقم المحفظة أو الحساب اللي حوّلت منه'))+'</label><input id="ps" maxlength="60" inputmode="tel" placeholder="">'
+   +'<h3 style="margin-top:16px">3) '+esc(_('سكرين شوت التحويل'))+'</h3>'
+   +'<label class="btn line block" style="cursor:pointer;text-align:center;margin:6px 0">📷 '+esc(_('اختار صورة التحويل'))+'<input id="pshot" type="file" accept="image/*" hidden></label>'
+   +'<div id="pshotprev" style="text-align:center"></div>'
+   +'<label class="f" for="pnote">'+esc(_('ملاحظة (اختياري)'))+'</label><input id="pnote" maxlength="300">'
+   +'<button class="btn block" type="button" id="paysend" data-act="paysend" style="margin-top:14px">'+esc(_('ابعت الطلب'))+'</button>'
+   +'<div class="muted" style="font-size:12px;margin-top:8px;text-align:center">'+esc(_('هيتفعّل حسابك بعد ما يتأكد من التحويل.'))+'</div></form>')
+   +'<div id="payhist">'+payHistHtml()+'</div>';
+}
+function payDraw(){const m=$('#main');if(!m)return;m.innerHTML=payHtml();window.scrollTo(0,0)}
+function payHistPaint(){const h=document.getElementById('payhist');if(h)h.innerHTML=payHistHtml();
+  if(U.payOpen&&document.getElementById('payf')&&(C.payOut||[]).some(r=>r.status==='pending'))payDraw()}
+function payOpenPage(){
+  if(!payCanUse())return;
+  U.payOpen=true;U.pay={months:1,shot:null,info:undefined,busy:false};payDraw();
+  const to=payToUid();
+  const go=uid=>{Promise.resolve(CLOUD.payInfo?CLOUD.payInfo(uid):null).then(i=>{U.pay.info=i||null;if(U.payOpen){const f=document.getElementById('payf');
+    if(f){document.getElementById('paymeths').innerHTML=payMethodsHtml();const sel=document.getElementById('pm'),ms=(i&&i.methods)||[];
+      if(sel)sel.innerHTML=ms.map(m=>'<option value="'+esc(_(PAYT[m.t]||PAYT.ot))+'">'+esc(_(PAYT[m.t]||PAYT.ot))+'</option>').join('')+'<option value="'+esc(_('أخرى'))+'">'+esc(_('أخرى'))+'</option>'}
+    else payDraw()}}).catch(()=>{U.pay.info=null;if(U.payOpen)payDraw()})};
+  if(to)go(to);
+  else if(isCoach()&&CLOUD.adminInfo)CLOUD.adminInfo().then(a=>{C.adminInfo=a;if(a&&a.uid)go(a.uid);else{U.pay.info=null;payDraw()}}).catch(()=>{U.pay.info=null;payDraw()});
+  else{U.pay.info=null;payDraw()}
+}
+FX.payopen=function(){payOpenPage()};
+FX.payback=function(){U.payOpen=false;render()};
+FX.paymo=function(d){U.pay.months=+d.v;document.querySelectorAll('#paymo .chip').forEach(b=>{const on=+b.dataset.v===U.pay.months;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})};
+FX.paycopy=function(d){const v=d.v||'';const done=()=>toast(_('اتنسخ ✓'));
+  try{navigator.clipboard.writeText(v).then(done,()=>{const t=document.createElement('textarea');t.value=v;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){}t.remove()})}catch(e){toast(v)}};
+FX.paycancel=function(d){CLOUD.deletePayReq(d.id).then(()=>toast(_('اتلغى الطلب'))).catch(()=>toast(_('تعذر التنفيذ، جرّب تاني')))};
+document.addEventListener('change',async function(e){
+  const f=e.target;if(!f||f.id!=='pshot'||!f.files||!f.files[0])return;
+  try{let a=await imgToData(f.files[0],1100,.7);if(a.length>330000)a=await imgToData(f.files[0],800,.55);if(a.length>350000)throw new Error('big');
+    U.pay.shot=a;const pv=document.getElementById('pshotprev');if(pv)pv.innerHTML='<img class="payshot" style="width:140px;height:140px" alt="" src="'+a+'">'}
+  catch(err){U.pay.shot=null;toast(_('الصورة مش مناسبة أو كبيرة'))}
+});
+FX.paysend=async function(){
+  if(U.pay.busy)return;
+  const v=id=>((document.getElementById(id)||{}).value||'').trim();
+  const to=payToUid();if(!to){toast(_('بيانات الاستلام مش جاهزة، كلّم ')+payToName());return}
+  const name=v('pn'),phone=v('pp'),amount=pf(v('pa')),sender=v('ps');
+  if(name.length<2){toast(_('اكتب اسمك'));return}
+  if(phone.replace(/\D/g,'').length<7){toast(_('اكتب رقم موبايل صحيح'));return}
+  if(!(amount>0&&amount<1000000)){toast(_('اكتب المبلغ اللي حوّلته'));return}
+  if(sender.length<5){toast(_('اكتب رقم المحفظة اللي حوّلت منها'));return}
+  if(!U.pay.shot){toast(_('ارفع سكرين شوت التحويل'));return}
+  if((C.payOut||[]).some(r=>r.status==='pending')){toast(_('طلبك الأخير لسه بيتراجع'));return}
+  U.pay.busy=true;const b=document.getElementById('paysend');if(b){b.disabled=true;b.textContent=_('بيتبعت…')}
+  try{
+    await CLOUD.createPayReq({from:C.user.uid,to,role:isCoach()?'coach':'client',name,phone,months:U.pay.months,amount,method:v('pm')||'',senderNo:sender,shot:U.pay.shot,note:v('pnote'),ts:Date.now(),status:'pending'});
+    try{pushNotify(to,name,_('طلب اشتراك جديد'),'pay')}catch(e){}
+    U.pay.shot=null;toast(_('الطلب اتبعت ✓ هيتفعّل بعد التأكد من التحويل'));
+  }catch(e){toast(_('تعذر الإرسال، جرّب تاني'))}
+  U.pay.busy=false;payDraw();
+};
+
+/* ---------- receiver inbox ---------- */
+function payInboxInner(){
+  const all=C.payIn||[],pend=all.filter(r=>r.status==='pending'),done=all.filter(r=>r.status!=='pending').slice(0,4);
+  if(!pend.length&&!done.length)return '';
+  let h='<div class="card"'+(pend.length?' style="border:1px solid var(--flame)"':'')+'><h3 style="margin:0 0 4px">💳 '+esc(_('طلبات الاشتراك'))+(pend.length?' ('+pend.length+')':'')+'</h3>';
+  if(!pend.length)h+='<div class="muted">'+esc(_('مفيش طلبات جديدة.'))+'</div>';
+  pend.forEach(r=>{h+='<div class="payreq"><div class="row" style="gap:12px;align-items:flex-start"><img class="payshot" alt="'+esc(_('سكرين شوت التحويل'))+'" src="'+esc(r.shot||'')+'" data-act="payzoom" data-id="'+esc(r.id)+'"><div class="grow" style="min-width:0"><b>'+esc(r.name||'')+'</b> <span class="muted" style="font-size:12px">'+esc(r.role==='coach'?_('مدرب'):_('عميل'))+'</span>'
+    +'<div>'+esc(payMonthsTxt(r.months))+' · <b>'+esc(r.amount)+'</b></div><div class="muted" style="font-size:12px;overflow-wrap:anywhere">'+esc(r.method||'')+' · '+esc(_('من: '))+'<span dir="ltr">'+esc(r.senderNo||'')+'</span></div>'
+    +'<div class="muted" style="font-size:12px">'+esc(_('موبايل: '))+'<span dir="ltr">'+esc(r.phone||'')+'</span> · '+esc(payTime(r.ts))+'</div>'+(r.note?'<div class="muted" style="font-size:12px">'+esc(r.note)+'</div>':'')+'</div></div>'
+    +'<button class="btn block" style="margin-top:10px" data-act="payok" data-id="'+esc(r.id)+'">✓ '+esc(_('تفعيل '))+esc(payMonthsTxt(r.months))+'</button><div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">'
+    +'<input id="prn_'+esc(r.id)+'" maxlength="120" placeholder="'+esc(_('سبب الرفض (اختياري)'))+'" aria-label="'+esc(_('سبب الرفض (اختياري)'))+'" style="flex:1 1 130px;min-width:0"><button class="btn line sm" data-act="payno" data-id="'+esc(r.id)+'">✕ '+esc(_('رفض'))+'</button></div></div>'});
+  if(done.length)h+='<div class="muted" style="font-size:12px;margin-top:12px">'+esc(_('آخر القرارات'))+'</div>'+done.map(r=>'<div class="row sp" style="margin-top:6px;font-size:13px"><span>'+esc(r.name||'')+' · '+esc(payMonthsTxt(r.months))+'</span>'+payStat(r.status)+'</div>').join('');
+  return h+'</div>';
+}
+const payInboxHtml=()=>'<div id="payinbox">'+payInboxInner()+'</div>';
+function payInboxPaint(){const e=document.getElementById('payinbox');if(e)e.innerHTML=payInboxInner()}
+FX.payzoom=function(d){const r=(C.payIn||[]).find(x=>x.id===d.id);if(!r)return;const o=document.createElement('div');o.id='payzoom';o.setAttribute('role','dialog');o.setAttribute('aria-label',_('سكرين شوت التحويل'));
+  o.innerHTML='<img class="payshotbig" alt="" src="'+esc(r.shot)+'">';o.onclick=()=>o.remove();document.body.appendChild(o);
+  const k=e=>{if(e.key==='Escape'){o.remove();document.removeEventListener('keydown',k)}};document.addEventListener('keydown',k)};
+FX.payok=async function(d){
+  const r=(C.payIn||[]).find(x=>x.id===d.id);if(!r||r.status!=='pending')return;
+  const a=findAcct(r.from);if(!a){toast(_('الحساب مش ظاهر عندك. افتح قايمة المدربين/العملاء وجرّب تاني'));return}
+  try{
+    const u=addMonths(Math.max(Date.now(),effUntil(a)),r.months);
+    await CLOUD.setProfile(r.from,{until:u,blocked:false});Object.assign(a,{until:u,blocked:false});
+    await CLOUD.updatePayReq(r.id,{status:'approved',decidedAt:Date.now()});
+    try{pushNotify(r.from,(C.profile&&C.profile.name)||'Forma',_('تم تفعيل اشتراكك لحد ')+fmtD(u),'sub')}catch(e){}
+    toast(_('اتفعّل لحد ')+fmtD(u));renderCoachApp();
+  }catch(e){toast(_('تعذر التنفيذ، جرّب تاني'))}
+};
+FX.payno=async function(d){
+  const r=(C.payIn||[]).find(x=>x.id===d.id);if(!r||r.status!=='pending')return;
+  const note=((document.getElementById('prn_'+d.id)||{}).value||'').trim().slice(0,120);
+  try{await CLOUD.updatePayReq(r.id,{status:'rejected',note,decidedAt:Date.now()});
+    try{pushNotify(r.from,(C.profile&&C.profile.name)||'Forma',_('طلب الاشتراك اترفض')+(note?': '+note:''),'sub')}catch(e){}
+    toast(_('اترفض الطلب'))}catch(e){toast(_('تعذر التنفيذ، جرّب تاني'))}
+};
+
+/* ---------- receiver: my payment details ---------- */
+function payInfoCard(){
+  const i=C.myPay||{methods:[],note:''};const ms=(i.methods||[]).slice(0,3);while(ms.length<3)ms.push({t:'vf',n:'',h:''});
+  return '<div class="card" id="payinfocard"><h3>💳 '+esc(_('بيانات استلام الدفع'))+'</h3><div class="muted" style="font-size:13px;margin-bottom:6px">'+esc(isAdminUser()?_('بتظهر للمدربين وهما بيجدّدوا اشتراكهم.'):_('بتظهر لعملائك وهما بيجدّدوا اشتراكهم.'))+'</div>'
+   +ms.map((m,k)=>'<div class="pmeth" style="flex-wrap:wrap"><select id="pi_t'+k+'" aria-label="'+esc(_('النوع'))+'" style="flex:1 1 120px">'+Object.keys(PAYT).map(t=>'<option value="'+t+'"'+(m.t===t?' selected':'')+'>'+esc(_(PAYT[t]))+'</option>').join('')+'</select>'
+     +'<input id="pi_n'+k+'" maxlength="40" inputmode="tel" value="'+esc(m.n||'')+'" placeholder="'+esc(_('الرقم / العنوان'))+'" aria-label="'+esc(_('الرقم / العنوان'))+'" style="flex:2 1 150px;direction:ltr"><input id="pi_h'+k+'" maxlength="40" value="'+esc(m.h||'')+'" placeholder="'+esc(_('اسم صاحب الحساب (اختياري)'))+'" aria-label="'+esc(_('اسم صاحب الحساب (اختياري)'))+'" style="flex:1 1 100%"></div>').join('')
+   +'<label class="f" for="pi_note" style="display:block;margin-top:10px">'+esc(_('الأسعار وملاحظات (اختياري)'))+'</label><textarea id="pi_note" rows="3" maxlength="400" style="width:100%" placeholder="'+esc(_('مثال: شهر 300 · 3 شهور 800'))+'">'+esc(i.note||'')+'</textarea>'
+   +'<button class="btn block" style="margin-top:10px" data-act="payinfosave">'+esc(_('حفظ'))+'</button></div>';
+}
+FX.payinfosave=async function(){
+  const ms=[];for(let k=0;k<3;k++){const n=((document.getElementById('pi_n'+k)||{}).value||'').trim();if(!n)continue;
+    ms.push({t:(document.getElementById('pi_t'+k)||{}).value||'ot',n:n.slice(0,40),h:((document.getElementById('pi_h'+k)||{}).value||'').trim().slice(0,40)})}
+  const note=((document.getElementById('pi_note')||{}).value||'').trim().slice(0,400);
+  try{await CLOUD.setPayInfo(C.user.uid,{methods:ms,note});C.myPay={methods:ms,note};toast(_('اتحفظت بيانات الدفع ✓'))}catch(e){toast(_('تعذر الحفظ، جرّب تاني'))}
+};
+function payAcctCard(){
+  const p=C.profile||{},u=effUntil(p),s=accState(p);
+  const line=s==='active'?_('ساري لحد ')+fmtD(u)+' · '+daysLeft(u)+' '+_n(daysLeft(u),' يوم'):s==='expired'?_('اشتراكك انتهى'):s==='pending'?_('في انتظار التفعيل'):_('الحساب موقوف');
+  return '<div class="card" id="paycard"><h3>💳 '+esc(_('اشتراك / تجديد'))+'</h3><div class="muted" style="margin-bottom:10px">'+esc(line)+'</div><button class="btn block" data-act="payopen">'+esc(_('جدّد أو اشترك'))+'</button></div>';
+}
+
+/* ---------- hooks ---------- */
+(function(){
+  const g0=renderGate;renderGate=function(g){g0.apply(this,arguments);try{
+    if(U.payOpen&&payCanUse()){payDraw();return}
+    const b=document.querySelector('#main [data-act="regate"]');
+    if(b&&payCanUse())b.insertAdjacentHTML('beforebegin','<button class="btn block" style="margin-bottom:10px" data-act="payopen">💳 '+esc(_('اشتراك / تجديد'))+'</button>')}catch(e){}};
+  const eb=expBannerHtml;expBannerHtml=function(){let h=eb.apply(this,arguments);if(h&&payCanUse())h=h.replace(/<\/div><\/div>$/,'</div><button class="btn sm" style="margin-top:8px" data-act="payopen">💳 '+esc(_('جدّد دلوقتي'))+'</button></div>');return h};
+  const v0=vClients0;vClients0=function(){return (isAdminUser()?'':payInboxHtml())+v0.apply(this,arguments)};
+  const va=vAdmin;vAdmin=function(){return payInboxHtml()+va.apply(this,arguments)};
+  const r0=render;render=function(){
+    try{payStart()}catch(e){}
+    if(U.payOpen&&payCanUse()&&C.user&&C.profile){if(!document.getElementById('payf')&&!document.getElementById('payhist'))payDraw();return}
+    U.payOpen=false;return r0.apply(this,arguments)};
+  const a0=accUi;accUi=function(){a0();
+    const b=document.querySelector('#main [data-act="signout"]');if(!b||!C.profile)return;
+    const host=b.closest('.card')||b;
+    if(payCanUse()&&!document.getElementById('paycard'))host.insertAdjacentHTML('beforebegin',payAcctCard());
+    if((isCoach()||isAdminUser())&&!document.getElementById('payinfocard')){
+      host.insertAdjacentHTML('beforebegin',payInfoCard());
+      if(C.myPay===undefined&&CLOUD.payInfo){C.myPay=null;CLOUD.payInfo(C.user.uid).then(i=>{C.myPay=i||{methods:[],note:''};const c=document.getElementById('payinfocard');if(c&&!c.contains(document.activeElement))c.outerHTML=payInfoCard()}).catch(()=>{C.myPay={methods:[],note:''}})}}
+  };
+  /* leaving through the bottom nav closes the page */
+  document.addEventListener('click',function(e){if(U.payOpen&&e.target.closest&&e.target.closest('#nav button'))U.payOpen=false},true);
+})();
+
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
 applyTheme();

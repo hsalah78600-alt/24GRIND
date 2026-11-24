@@ -71,6 +71,11 @@ const Cloud = {
     const s = await sdk();
     for (const sub of ['data', 'plan', 'messages', 'photos']) await wipeSub(s, uid, sub);
     try { await s.F.deleteDoc(s.F.doc(s.db, 'pushSubs', uid)); } catch (e) {}
+    try { await s.F.deleteDoc(s.F.doc(s.db, 'payInfo', uid)); } catch (e) {}
+    try {
+      const q = await s.F.getDocs(s.F.query(s.F.collection(s.db, 'payReqs'), s.F.where('from', '==', uid)));
+      for (const d of q.docs) { try { await s.F.deleteDoc(d.ref); } catch (e) {} }
+    } catch (e) {}
     if (code) { try { await s.F.deleteDoc(s.F.doc(s.db, 'coachCodes', code)); } catch (e) {} }
     await s.F.deleteDoc(s.F.doc(s.db, 'users', uid));
     await s.A.deleteUser(s.auth.currentUser);
@@ -196,6 +201,34 @@ const Cloud = {
   async setAdminInfo(data) {
     const s = await sdk();
     await s.F.setDoc(s.F.doc(s.db, 'adminInfo', 'main'), clean(data));
+  },
+  /* ----- الاشتراك / التجديد ----- */
+  async payInfo(uid) {
+    const s = await sdk();
+    const d = await s.F.getDoc(s.F.doc(s.db, 'payInfo', uid));
+    return d.exists() ? d.data() : null;
+  },
+  async setPayInfo(uid, data) {
+    const s = await sdk();
+    await s.F.setDoc(s.F.doc(s.db, 'payInfo', uid), clean(data));
+  },
+  async createPayReq(obj) {
+    const s = await sdk();
+    const r = await s.F.addDoc(s.F.collection(s.db, 'payReqs'), clean(obj));
+    return r.id;
+  },
+  async watchPayReqs(field, uid, cb) {
+    const s = await sdk();
+    const q = s.F.query(s.F.collection(s.db, 'payReqs'), s.F.where(field, '==', uid));
+    return s.F.onSnapshot(q, snap => cb(snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (b.ts || 0) - (a.ts || 0))), () => cb([]));
+  },
+  async updatePayReq(id, patch) {
+    const s = await sdk();
+    await s.F.updateDoc(s.F.doc(s.db, 'payReqs', id), clean(patch));
+  },
+  async deletePayReq(id) {
+    const s = await sdk();
+    await s.F.deleteDoc(s.F.doc(s.db, 'payReqs', id));
   },
   async sendMessage(uid, msg) {
     const s = await sdk();
