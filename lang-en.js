@@ -1095,5 +1095,7 @@ window.EN={
 "شكل التطبيق": "App appearance",
 "زي الموبايل": "Match my phone",
 "\"زي الموبايل\" يتبع إعداد جهازك (فاتح أو داكن) لوحده.": "\"Match my phone\" follows your device setting (light or dark) automatically.",
-"اللغة": "Language"
+"اللغة": "Language",
+"تعليم الرسايل كمقروءة": "Mark messages as read",
+"تم التعليم كمقروء": "Marked as read"
 };

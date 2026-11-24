@@ -14,8 +14,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="FORMA">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" sizes="180x180" href="forma-icon-touch.png?v=4">
-<link rel="icon" type="image/png" sizes="192x192" href="forma-icon-192.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="fm5-touch.png">
+<link rel="icon" type="image/png" sizes="192x192" href="fm5-192.png">
 <title>FORMA</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700&family=Readex+Pro:wght@700&family=Kanit:ital,wght@1,900&display=swap">
 <style>
@@ -697,7 +697,7 @@ function ntAlert(it){
   try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}
   try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.05;o.start();o.stop(a.currentTime+.14)}catch(e){}
   try{if(document.hidden&&!pushOn()&&window.Notification&&Notification.permission==='granted'){
-    const o={body:it.txt,icon:'forma-icon-192.png?v=4',tag:it.id};
+    const o={body:it.txt,icon:'fm5-192.png',tag:it.id};
     if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(r=>r.showNotification('Forma',o)).catch(()=>{});else new Notification('Forma',o)}}catch(e){}
 }
 function ntPush(it){
@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='34';
+const APP_BUILD='35';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3148,6 +3148,42 @@ function syncThemeColor(){try{const t=(S.settings&&S.settings.theme)||'auto';
 (function(){const t0=applyTheme;applyTheme=function(){t0.apply(this,arguments);syncThemeColor()};
   try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncThemeColor)}catch(e){}
   syncThemeColor()})();
+
+/* ===== chat: always open at the LAST message; reading is confirmed by a button ===== */
+(function(){const st=document.createElement('style');
+st.textContent='.rdbtn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:6px;padding:9px 12px;border-radius:12px;border:1px solid var(--accent);background:var(--surface2);color:var(--fg);font-weight:700;font-size:13px;min-height:40px}.rdbtn:active{transform:scale(.98)}.newdiv{display:block}';
+document.head.appendChild(st)})();
+function chatLast(el){const bs=el.querySelectorAll('.bub');return bs.length?bs[bs.length-1]:null}
+function chatStick(el){if(el&&el.isConnected&&el.dataset.stk!=='0')el.scrollTop=el.scrollHeight}
+function chatUnread(el,I){const bs=[].slice.call(el.querySelectorAll('.bub'));const lr=rdGet(I.th,bs,I.me);
+  return {bs,lr,list:bs.filter(b=>b.dataset.f!==I.me&&(+b.dataset.ts||0)>lr)}}
+function chatBtn(el,n){let b=el.nextElementSibling;if(b&&!b.classList.contains('rdbtn'))b=null;
+  if(n<=0){if(b)b.remove();return}
+  if(!b){b=document.createElement('button');b.type='button';b.className='rdbtn';b.setAttribute('data-act','rdall');b.setAttribute('data-id',el.id);el.insertAdjacentElement('afterend',b)}
+  b.textContent='✓ '+_('تعليم الرسايل كمقروءة')+' ('+n+')'}
+chatRead=function(el){ /* no auto-read: only refresh the button */
+  if(!el||!el.isConnected)return;const I=chatInfo(el);if(!I||!I.th)return;chatBtn(el,chatUnread(el,I).list.length)};
+chatPos=function(el,mode){
+  const I=chatInfo(el);if(!I||!I.th)return;
+  const old=el.querySelector('.newdiv');if(old)old.remove();
+  const last=chatLast(el);if(!last){chatBtn(el,0);el.dataset.fx='1';return}
+  /* replying implies you have read everything before it */
+  if(last.dataset.f===I.me){const t=+last.dataset.ts||0;try{if(t>(+localStorage.getItem(rdKey(I.th))||0)){localStorage.setItem(rdKey(I.th),String(t));navBadges()}}catch(e){}}
+  const u=chatUnread(el,I);
+  if(u.list.length){const m=document.createElement('div');m.className='newdiv';m.textContent=_('رسايل جديدة');u.list[0].parentNode.insertBefore(m,u.list[0])}
+  chatBtn(el,u.list.length);
+  const firstOpen=!el.dataset.fx;
+  if(firstOpen){el.dataset.stk='1';
+    ['wheel','touchstart','mousedown'].forEach(ev=>el.addEventListener(ev,()=>{el.dataset.stk='0'},{passive:true}));
+    el.addEventListener('load',()=>chatStick(el),true);el.addEventListener('loadedmetadata',()=>chatStick(el),true);
+    [0,120,400,900,1800].forEach(ms=>setTimeout(()=>chatStick(el),ms))}
+  else if(mode){el.dataset.stk='1';el.scrollTop=el.scrollHeight}
+  el.dataset.fx='1'};
+FX.rdall=function(d){const el=document.getElementById(d.id);if(!el)return;const I=chatInfo(el);if(!I||!I.th)return;
+  const last=chatLast(el);if(!last)return;const t=+last.dataset.ts||0;
+  try{localStorage.setItem(rdKey(I.th),String(t))}catch(e){}
+  const m=el.querySelector('.newdiv');if(m)m.remove();chatBtn(el,0);try{navBadges()}catch(e){}
+  try{toast&&toast(_('تم التعليم كمقروء'))}catch(e){}};
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
