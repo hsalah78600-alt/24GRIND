@@ -3185,6 +3185,11 @@ FX.rdall=function(d){const el=document.getElementById(d.id);if(!el)return;const 
   const m=el.querySelector('.newdiv');if(m)m.remove();chatBtn(el,0);try{navBadges()}catch(e){}
   try{toast&&toast(_('تم التعليم كمقروء'))}catch(e){}};
 
+/* Escape closes the open sheet (picker, exercise info, chat, edit…) through its own close button */
+document.addEventListener('keydown',e=>{if(e.key!=='Escape'||e.defaultPrevented)return;
+  if(document.getElementById('cfmov')||document.getElementById('fxov'))return;
+  const b=document.querySelector('#layer [data-act="closemodal"]');if(b){e.preventDefault();b.click()}});
+
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
 applyTheme();
