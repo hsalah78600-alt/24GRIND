@@ -226,6 +226,11 @@ const Cloud = {
     const s = await sdk();
     await s.F.updateDoc(s.F.doc(s.db, 'payReqs', id), clean(patch));
   },
+  async allClients(max) {
+    const s = await sdk();
+    const q = await s.F.getDocs(s.F.query(s.F.collection(s.db, 'users'), s.F.where('role', '==', 'client'), s.F.limit(max || 500)));
+    return q.docs.map(d => { const x = d.data(); return { uid: d.id, role: 'client', name: x.name || '', email: x.email || '', phone: x.phone || '', coachId: x.coachId || null, coachName: x.coachName || '', until: x.until || null, blocked: !!x.blocked, createdAt: x.createdAt || 0 }; });
+  },
   async deletePayReq(id) {
     const s = await sdk();
     await s.F.deleteDoc(s.F.doc(s.db, 'payReqs', id));

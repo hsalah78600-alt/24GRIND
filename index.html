@@ -3239,9 +3239,12 @@ function payHistHtml(){
   return '<div class="card"><h3>'+esc(_('طلباتي'))+'</h3>'+L.slice(0,8).map(r=>'<div class="payreq"><div class="row sp"><b>'+esc(payMonthsTxt(r.months))+' · '+esc(r.amount)+'</b>'+payStat(r.status)+'</div><div class="muted" style="font-size:12px">'+esc(payTime(r.ts))+(r.note&&r.status==='rejected'?' · '+esc(r.note):'')+'</div>'
     +(r.status==='pending'?'<button class="btn line sm" style="margin-top:8px" data-act="paycancel" data-id="'+esc(r.id)+'">'+esc(_('إلغاء الطلب'))+'</button>':'')+'</div>').join('')+'</div>';
 }
+const payPrice=m=>{const x=U.pay.info&&U.pay.info.prices&&+U.pay.info.prices[m];return x>0?x:0};
+function payChipsHtml(){return [1,2,3,6].map(m=>'<button type="button" class="chip'+(U.pay.months===m?' on':'')+'" data-act="paymo" data-v="'+m+'" aria-pressed="'+(U.pay.months===m)+'">'+esc(payMonthsTxt(m))+(payPrice(m)?' · '+payPrice(m):'')+'</button>').join('')}
+function payFillAmt(){const a=document.getElementById('pa'),pr=payPrice(U.pay.months);if(!a||!pr)return;if(!a.value||a.dataset.auto==='1'){a.value=pr;a.dataset.auto='1'}}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='pa')e.target.dataset.auto=''});
 function payHtml(){
   const p=C.profile||{},pend=(C.payOut||[]).some(r=>r.status==='pending');
-  const mo=U.pay.months,chip=m=>'<button type="button" class="chip'+(mo===m?' on':'')+'" data-act="paymo" data-v="'+m+'" aria-pressed="'+(mo===m)+'">'+esc(payMonthsTxt(m))+'</button>';
   const ms=(U.pay.info&&U.pay.info.methods)||[];
   return '<div class="row sp" style="margin-bottom:10px"><h2 style="margin:0">'+esc(_('اشتراك / تجديد'))+'</h2><button class="btn line sm" data-act="payback">'+esc(_('رجوع'))+'</button></div>'
    +payStatusHtml()
@@ -3250,7 +3253,7 @@ function payHtml(){
    '<form class="card payf" id="payf" onsubmit="return false"><h3>2) '+esc(_('املى بياناتك'))+'</h3>'
    +'<label class="f" for="pn">'+esc(_('الاسم'))+'</label><input id="pn" maxlength="80" autocomplete="name" value="'+esc(p.name||'')+'">'
    +'<label class="f" for="pp">'+esc(_('رقم موبايلك'))+'</label><input id="pp" maxlength="25" inputmode="tel" autocomplete="tel" value="'+esc(p.phone||'')+'">'
-   +'<label class="f">'+esc(_('مدة الاشتراك'))+'</label><div class="chips paymo" id="paymo">'+chip(1)+chip(2)+chip(3)+chip(6)+'</div>'
+   +'<label class="f">'+esc(_('مدة الاشتراك'))+'</label><div class="chips paymo" id="paymo">'+payChipsHtml()+'</div>'
    +'<label class="f" for="pa">'+esc(_('المبلغ اللي حوّلته'))+'</label><input id="pa" inputmode="decimal" maxlength="9" placeholder="">'
    +'<label class="f" for="pm">'+esc(_('حوّلت عن طريق'))+'</label><select id="pm">'+ms.map(m=>'<option value="'+esc(_(PAYT[m.t]||PAYT.ot))+'">'+esc(_(PAYT[m.t]||PAYT.ot))+'</option>').join('')+'<option value="'+esc(_('أخرى'))+'">'+esc(_('أخرى'))+'</option></select>'
    +'<label class="f" for="ps">'+esc(_('رقم المحفظة أو الحساب اللي حوّلت منه'))+'</label><input id="ps" maxlength="60" inputmode="tel" placeholder="">'
@@ -3270,7 +3273,7 @@ function payOpenPage(){
   U.payOpen=true;U.pay={months:1,shot:null,info:undefined,busy:false};payDraw();
   const to=payToUid();
   const go=uid=>{Promise.resolve(CLOUD.payInfo?CLOUD.payInfo(uid):null).then(i=>{U.pay.info=i||null;if(U.payOpen){const f=document.getElementById('payf');
-    if(f){document.getElementById('paymeths').innerHTML=payMethodsHtml();const sel=document.getElementById('pm'),ms=(i&&i.methods)||[];
+    if(f){document.getElementById('paymeths').innerHTML=payMethodsHtml();const pm=document.getElementById('paymo');if(pm)pm.innerHTML=payChipsHtml();payFillAmt();const sel=document.getElementById('pm'),ms=(i&&i.methods)||[];
       if(sel)sel.innerHTML=ms.map(m=>'<option value="'+esc(_(PAYT[m.t]||PAYT.ot))+'">'+esc(_(PAYT[m.t]||PAYT.ot))+'</option>').join('')+'<option value="'+esc(_('أخرى'))+'">'+esc(_('أخرى'))+'</option>'}
     else payDraw()}}).catch(()=>{U.pay.info=null;if(U.payOpen)payDraw()})};
   if(to)go(to);
@@ -3279,14 +3282,16 @@ function payOpenPage(){
 }
 FX.payopen=function(){payOpenPage()};
 FX.payback=function(){U.payOpen=false;render()};
-FX.paymo=function(d){U.pay.months=+d.v;document.querySelectorAll('#paymo .chip').forEach(b=>{const on=+b.dataset.v===U.pay.months;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})};
+FX.paymo=function(d){U.pay.months=+d.v;document.querySelectorAll('#paymo .chip').forEach(b=>{const on=+b.dataset.v===U.pay.months;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});payFillAmt()};
 FX.paycopy=function(d){const v=d.v||'';const done=()=>toast(_('اتنسخ ✓'));
   try{navigator.clipboard.writeText(v).then(done,()=>{const t=document.createElement('textarea');t.value=v;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){}t.remove()})}catch(e){toast(v)}};
 FX.paycancel=function(d){CLOUD.deletePayReq(d.id).then(()=>toast(_('اتلغى الطلب'))).catch(()=>toast(_('تعذر التنفيذ، جرّب تاني')))};
 document.addEventListener('change',async function(e){
   const f=e.target;if(!f||f.id!=='pshot'||!f.files||!f.files[0])return;
   try{let a=await imgToData(f.files[0],1100,.7);if(a.length>330000)a=await imgToData(f.files[0],800,.55);if(a.length>350000)throw new Error('big');
-    U.pay.shot=a;const pv=document.getElementById('pshotprev');if(pv)pv.innerHTML='<img class="payshot" style="width:140px;height:140px" alt="" src="'+a+'">'}
+    U.pay.shot=a;const pv=document.getElementById('pshotprev');
+    const dim=await new Promise(r=>{const im=new Image();im.onload=()=>r(Math.min(im.naturalWidth,im.naturalHeight));im.onerror=()=>r(0);im.src=a});
+    if(pv)pv.innerHTML='<img class="payshot" style="width:140px;height:140px" alt="" src="'+a+'">'+(dim&&dim<450?'<div style="color:var(--flame);font-size:13px;margin-top:6px">⚠ '+esc(_('الصورة صغيرة وممكن ما تبانش. يفضّل سكرين شوت كامل من التطبيق.'))+'</div>':'')}
   catch(err){U.pay.shot=null;toast(_('الصورة مش مناسبة أو كبيرة'))}
 });
 FX.paysend=async function(){
@@ -3310,6 +3315,11 @@ FX.paysend=async function(){
 };
 
 /* ---------- receiver inbox ---------- */
+function payReportHtml(){
+  const ap=(C.payIn||[]).filter(r=>r.status==='approved');if(!ap.length)return '';
+  const now=new Date(),mk=d=>d.getFullYear()*12+d.getMonth(),cur=mk(now);
+  const row=(off,label)=>{const L=ap.filter(r=>mk(new Date(r.decidedAt||r.ts))===cur-off);return '<div class="row sp" style="margin-top:6px;font-size:13px"><span>'+esc(label)+'</span><b>'+L.length+' '+esc(_('طلب'))+' · '+L.reduce((t,r)=>t+(+r.amount||0),0)+' '+esc(_('ج'))+'</b></div>'};
+  return '<div class="muted" style="font-size:12px;margin-top:14px">'+esc(_('تقرير المدفوعات'))+'</div>'+row(0,_('الشهر ده'))+row(1,_('الشهر اللي فات'))+row(2,_('قبله'))}
 function payInboxInner(){
   const all=C.payIn||[],pend=all.filter(r=>r.status==='pending'),done=all.filter(r=>r.status!=='pending').slice(0,4);
   if(!pend.length&&!done.length)return '';
@@ -3321,6 +3331,7 @@ function payInboxInner(){
     +'<button class="btn block" style="margin-top:10px" data-act="payok" data-id="'+esc(r.id)+'">✓ '+esc(_('تفعيل '))+esc(payMonthsTxt(r.months))+'</button><div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">'
     +'<input id="prn_'+esc(r.id)+'" maxlength="120" placeholder="'+esc(_('سبب الرفض (اختياري)'))+'" aria-label="'+esc(_('سبب الرفض (اختياري)'))+'" style="flex:1 1 130px;min-width:0"><button class="btn line sm" data-act="payno" data-id="'+esc(r.id)+'">✕ '+esc(_('رفض'))+'</button></div></div>'});
   if(done.length)h+='<div class="muted" style="font-size:12px;margin-top:12px">'+esc(_('آخر القرارات'))+'</div>'+done.map(r=>'<div class="row sp" style="margin-top:6px;font-size:13px"><span>'+esc(r.name||'')+' · '+esc(payMonthsTxt(r.months))+'</span>'+payStat(r.status)+'</div>').join('');
+  h+=payReportHtml();
   return h+'</div>';
 }
 const payInboxHtml=()=>'<div id="payinbox">'+payInboxInner()+'</div>';
@@ -3353,6 +3364,7 @@ function payInfoCard(){
   return '<div class="card" id="payinfocard"><h3>💳 '+esc(_('بيانات استلام الدفع'))+'</h3><div class="muted" style="font-size:13px;margin-bottom:6px">'+esc(isAdminUser()?_('بتظهر للمدربين وهما بيجدّدوا اشتراكهم.'):_('بتظهر لعملائك وهما بيجدّدوا اشتراكهم.'))+'</div>'
    +ms.map((m,k)=>'<div class="pmeth" style="flex-wrap:wrap"><select id="pi_t'+k+'" aria-label="'+esc(_('النوع'))+'" style="flex:1 1 120px">'+Object.keys(PAYT).map(t=>'<option value="'+t+'"'+(m.t===t?' selected':'')+'>'+esc(_(PAYT[t]))+'</option>').join('')+'</select>'
      +'<input id="pi_n'+k+'" maxlength="40" inputmode="tel" value="'+esc(m.n||'')+'" placeholder="'+esc(_('الرقم / العنوان'))+'" aria-label="'+esc(_('الرقم / العنوان'))+'" style="flex:2 1 150px;direction:ltr"><input id="pi_h'+k+'" maxlength="40" value="'+esc(m.h||'')+'" placeholder="'+esc(_('اسم صاحب الحساب (اختياري)'))+'" aria-label="'+esc(_('اسم صاحب الحساب (اختياري)'))+'" style="flex:1 1 100%"></div>').join('')
+   +'<label class="f" style="display:block;margin-top:10px">'+esc(_('الأسعار (جنيه)'))+'</label><div class="grid2" style="grid-template-columns:repeat(2,1fr)">'+[1,2,3,6].map(m=>'<div><span class="muted" style="font-size:12px">'+esc(payMonthsTxt(m))+'</span><input id="pi_p'+m+'" inputmode="numeric" maxlength="7" value="'+esc((i.prices&&i.prices[m])||'')+'" aria-label="'+esc(payMonthsTxt(m))+'"></div>').join('')+'</div>'
    +'<label class="f" for="pi_note" style="display:block;margin-top:10px">'+esc(_('الأسعار وملاحظات (اختياري)'))+'</label><textarea id="pi_note" rows="3" maxlength="400" style="width:100%" placeholder="'+esc(_('مثال: شهر 300 · 3 شهور 800'))+'">'+esc(i.note||'')+'</textarea>'
    +'<button class="btn block" style="margin-top:10px" data-act="payinfosave">'+esc(_('حفظ'))+'</button></div>';
 }
@@ -3360,7 +3372,8 @@ FX.payinfosave=async function(){
   const ms=[];for(let k=0;k<3;k++){const n=((document.getElementById('pi_n'+k)||{}).value||'').trim();if(!n)continue;
     ms.push({t:(document.getElementById('pi_t'+k)||{}).value||'ot',n:n.slice(0,40),h:((document.getElementById('pi_h'+k)||{}).value||'').trim().slice(0,40)})}
   const note=((document.getElementById('pi_note')||{}).value||'').trim().slice(0,400);
-  try{await CLOUD.setPayInfo(C.user.uid,{methods:ms,note});C.myPay={methods:ms,note};toast(_('اتحفظت بيانات الدفع ✓'))}catch(e){toast(_('تعذر الحفظ، جرّب تاني'))}
+  const prices={};[1,2,3,6].forEach(m=>{const v=pf(((document.getElementById('pi_p'+m)||{}).value||'').trim());if(v>0&&v<1000000)prices[m]=v});
+  try{await CLOUD.setPayInfo(C.user.uid,{methods:ms,note,prices});C.myPay={methods:ms,note,prices};toast(_('اتحفظت بيانات الدفع ✓'))}catch(e){toast(_('تعذر الحفظ، جرّب تاني'))}
 };
 function payAcctCard(){
   const p=C.profile||{},u=effUntil(p),s=accState(p);
@@ -3458,6 +3471,33 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&(t.id==='cfq'||t.id
 document.addEventListener('click',e=>{if(U.sgOpen&&!(e.target.closest&&(e.target.closest('#sg')||e.target.closest('#cfq')||e.target.closest('#adq')))){U.sgOpen=null;const o=document.getElementById('sg');if(o)o.remove()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&U.sgOpen){U.sgOpen=null;const o=document.getElementById('sg');if(o)o.remove()}});
 (function(){const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{if(U.sgOpen&&document.activeElement&&/^(cfq|adq)$/.test(document.activeElement.id))sgPaint();else{const o=document.getElementById('sg');if(o)o.remove()}}catch(e){}return x}})();
+
+/* ===== admin: find ANY client by ID / name / email / phone ===== */
+C.allCl=C.allCl||null;
+function afLoad(){if(C.allCl&&Date.now()-C.allCl.ts<300000)return Promise.resolve(C.allCl.list);
+  if(!CLOUD.allClients)return Promise.resolve([]);
+  return Promise.resolve(CLOUD.allClients(500)).then(l=>{C.allCl={ts:Date.now(),list:l||[]};return C.allCl.list}).catch(()=>[])}
+function afHtml(){return '<div class="card" id="afind"><h3 style="margin:0 0 8px">🔎 '+esc(_('بحث عن أي عميل'))+'</h3><input id="afq" type="search" autocomplete="off" maxlength="40" placeholder="'+esc(_('ID أو اسم أو إيميل أو موبايل'))+'" aria-label="'+esc(_('بحث عن أي عميل'))+'" value="'+esc(U.afq||'')+'"><div id="afres" aria-live="polite"></div></div>'}
+async function afPaint(){
+  const box=document.getElementById('afres');if(!box)return;const q=(U.afq||'').trim().toLowerCase().replace(/\s+/g,' ');
+  if(q.length<2){box.innerHTML='';return}
+  box.innerHTML='<div class="muted" style="margin-top:8px">'+esc(_('بيدوّر…'))+'</div>';
+  const L=await afLoad();if((U.afq||'').trim().toLowerCase().replace(/\s+/g,' ')!==q)return;
+  const qd=q.replace(/-/g,'');
+  const M=L.filter(c=>((c.name||'')+' '+(c.email||'')+' '+(c.phone||'')+' '+pidKey(c)).toLowerCase().includes(q)||pidKey(c).includes(qd)).slice(0,8);
+  box.innerHTML=M.length?M.map(c=>{const s=accState(c),u=effUntil(c);
+    return '<div class="payreq"><div class="row sp"><b>'+esc(c.name||_('عميل'))+pidBadge(c)+'</b><span class="paystat '+(s==='active'?'ok':'no')+'">'+esc(s==='active'?_('ساري'):s==='expired'?_('منتهي'):s==='blocked'?_('موقوف'):_('منتظر'))+'</span></div>'
+     +'<div class="muted" style="font-size:12px;overflow-wrap:anywhere">'+esc(c.email||'')+' · <span dir="ltr">'+esc(c.phone||'')+'</span></div>'
+     +'<div class="muted" style="font-size:12px">'+esc(_('المدرب: '))+esc(c.coachName||'—')+(u?' · '+esc(_('لحد '))+fmtD(u):'')+'</div>'
+     +'<button class="btn line sm" style="margin-top:8px" data-act="afadd" data-id="'+esc(c.uid)+'">+ '+esc(_('تفعيل شهر'))+'</button></div>'}).join('')
+   :'<div class="muted" style="margin-top:8px">'+esc(_('مفيش نتايج.'))+'</div>'}
+FX.afadd=async function(d){const c=((C.allCl&&C.allCl.list)||[]).find(x=>x.uid===d.id);if(!c)return;
+  try{const u=addMonths(Math.max(Date.now(),effUntil(c)),1);await CLOUD.setProfile(c.uid,{until:u,blocked:false});c.until=u;c.blocked=false;
+    try{pushNotify(c.uid,(C.profile&&C.profile.name)||'Forma',_('تم تفعيل اشتراكك لحد ')+fmtD(u),'sub')}catch(e){}
+    toast(_('اتفعّل لحد ')+fmtD(u));afPaint()}catch(e){toast(_('تعذر التنفيذ، جرّب تاني'))}};
+let afT=null;document.addEventListener('input',e=>{if(e.target&&e.target.id==='afq'){U.afq=e.target.value;clearTimeout(afT);afT=setTimeout(afPaint,250)}});
+(function(){const va=vAdmin;vAdmin=function(){return afHtml()+va.apply(this,arguments)};
+  const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{if(document.getElementById('afq')&&(U.afq||'').trim().length>=2)afPaint()}catch(e){}return x}})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});

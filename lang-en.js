@@ -1173,5 +1173,22 @@ window.EN={
 "رقم الـ ID بتاعك": "Your ID",
 "ابعته لأي حد يدوّر عليك أو لو احتجت دعم.": "Share it with anyone looking for you, or if you need support.",
 "ابعته لمدربك أو للدعم عشان يلاقوك بسرعة.": "Share it with your coach or support so they can find you fast.",
-"اقتراحات الأسماء": "Name suggestions"
+"اقتراحات الأسماء": "Name suggestions",
+"الأسعار (جنيه)": "Prices (EGP)",
+"الصورة صغيرة وممكن ما تبانش. يفضّل سكرين شوت كامل من التطبيق.": "The image is small and may be unreadable. A full screenshot from the app is best.",
+"طلب": "requests",
+"ج": "EGP",
+"تقرير المدفوعات": "Payments report",
+"الشهر ده": "This month",
+"الشهر اللي فات": "Last month",
+"قبله": "Month before",
+"بحث عن أي عميل": "Find any client",
+"ID أو اسم أو إيميل أو موبايل": "ID, name, email or phone",
+"بيدوّر…": "Searching…",
+"مفيش نتايج.": "No results.",
+"ساري": "Active",
+"منتظر": "Pending",
+"المدرب: ": "Coach: ",
+"لحد ": "Until ",
+"تفعيل شهر": "Activate 1 month"
 };
