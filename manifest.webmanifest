@@ -1,6 +1,6 @@
 {
-  "name": "FORMA | فورما",
-  "short_name": "FORMA",
+  "name": "24 GRIND | جرايند",
+  "short_name": "24 GRIND",
   "description": "تطبيق لياقة: تمارين، أكل، تقدم، وتواصل مع مدربك",
   "lang": "ar",
   "dir": "rtl",
@@ -12,17 +12,17 @@
   "theme_color": "#0E1115",
   "icons": [
     {
-      "src": "fm5-192.png",
+      "src": "fm7-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "fm5-512.png",
+      "src": "fm7-512.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "fm5-maskable.png",
+      "src": "fm7-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
