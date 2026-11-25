@@ -3239,10 +3239,12 @@ function payHistHtml(){
   return '<div class="card"><h3>'+esc(_('طلباتي'))+'</h3>'+L.slice(0,8).map(r=>'<div class="payreq"><div class="row sp"><b>'+esc(payMonthsTxt(r.months))+' · '+esc(r.amount)+'</b>'+payStat(r.status)+'</div><div class="muted" style="font-size:12px">'+esc(payTime(r.ts))+(r.note&&r.status==='rejected'?' · '+esc(r.note):'')+'</div>'
     +(r.status==='pending'?'<button class="btn line sm" style="margin-top:8px" data-act="paycancel" data-id="'+esc(r.id)+'">'+esc(_('إلغاء الطلب'))+'</button>':'')+'</div>').join('')+'</div>';
 }
-const payPrice=m=>{const x=U.pay.info&&U.pay.info.prices&&+U.pay.info.prices[m];return x>0?x:0};
-function payChipsHtml(){return [1,2,3,6].map(m=>'<button type="button" class="chip'+(U.pay.months===m?' on':'')+'" data-act="paymo" data-v="'+m+'" aria-pressed="'+(U.pay.months===m)+'">'+esc(payMonthsTxt(m))+(payPrice(m)?' · '+payPrice(m):'')+'</button>').join('')}
+const payBase=m=>{const x=U.pay.info&&U.pay.info.prices&&+U.pay.info.prices[m];return x>0?x:0};
+const payPrice=m=>{const b=payBase(m),c=U.pay.coupon;return b&&c?Math.max(0,Math.round(b*(100-c.p)/100)):b};
+function payChipsHtml(){return [1,2,3,6].map(m=>'<button type="button" class="chip'+(U.pay.months===m?' on':'')+'" data-act="paymo" data-v="'+m+'" aria-pressed="'+(U.pay.months===m)+'">'+esc(payMonthsTxt(m))+(payBase(m)?' · '+payPrice(m):'')+'</button>').join('')}
 function payFillAmt(){const a=document.getElementById('pa'),pr=payPrice(U.pay.months);if(!a||!pr)return;if(!a.value||a.dataset.auto==='1'){a.value=pr;a.dataset.auto='1'}}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='pa')e.target.dataset.auto=''});
+function payCouponHtml(){return ((U.pay.info&&(U.pay.info.coupons||[]).length)?'<label class="f" for="pcp">'+esc(_('كود خصم (اختياري)'))+'</label><div class="row" style="gap:8px"><input id="pcp" maxlength="20" autocomplete="off" style="flex:1;direction:ltr;text-transform:uppercase"><button class="btn line sm" type="button" data-act="paycoupon">'+esc(_('تطبيق'))+'</button></div><div id="pcpmsg" class="muted" style="font-size:12px;margin-top:4px"></div>':'')}
 function payHtml(){
   const p=C.profile||{},pend=(C.payOut||[]).some(r=>r.status==='pending');
   const ms=(U.pay.info&&U.pay.info.methods)||[];
@@ -3255,6 +3257,7 @@ function payHtml(){
    +'<label class="f" for="pp">'+esc(_('رقم موبايلك'))+'</label><input id="pp" maxlength="25" inputmode="tel" autocomplete="tel" value="'+esc(p.phone||'')+'">'
    +'<label class="f">'+esc(_('مدة الاشتراك'))+'</label><div class="chips paymo" id="paymo">'+payChipsHtml()+'</div>'
    +'<label class="f" for="pa">'+esc(_('المبلغ اللي حوّلته'))+'</label><input id="pa" inputmode="decimal" maxlength="9" placeholder="">'
+   +payCouponHtml()
    +'<label class="f" for="pm">'+esc(_('حوّلت عن طريق'))+'</label><select id="pm">'+ms.map(m=>'<option value="'+esc(_(PAYT[m.t]||PAYT.ot))+'">'+esc(_(PAYT[m.t]||PAYT.ot))+'</option>').join('')+'<option value="'+esc(_('أخرى'))+'">'+esc(_('أخرى'))+'</option></select>'
    +'<label class="f" for="ps">'+esc(_('رقم المحفظة أو الحساب اللي حوّلت منه'))+'</label><input id="ps" maxlength="60" inputmode="tel" placeholder="">'
    +'<h3 style="margin-top:16px">3) '+esc(_('سكرين شوت التحويل'))+'</h3>'
@@ -3270,10 +3273,10 @@ function payHistPaint(){const h=document.getElementById('payhist');if(h)h.innerH
   if(U.payOpen&&document.getElementById('payf')&&(C.payOut||[]).some(r=>r.status==='pending'))payDraw()}
 function payOpenPage(){
   if(!payCanUse())return;
-  U.payOpen=true;U.pay={months:1,shot:null,info:undefined,busy:false};payDraw();
+  U.payOpen=true;U.pay={months:1,shot:null,info:undefined,busy:false,coupon:null};payDraw();
   const to=payToUid();
   const go=uid=>{Promise.resolve(CLOUD.payInfo?CLOUD.payInfo(uid):null).then(i=>{U.pay.info=i||null;if(U.payOpen){const f=document.getElementById('payf');
-    if(f){document.getElementById('paymeths').innerHTML=payMethodsHtml();const pm=document.getElementById('paymo');if(pm)pm.innerHTML=payChipsHtml();payFillAmt();const sel=document.getElementById('pm'),ms=(i&&i.methods)||[];
+    if(f){document.getElementById('paymeths').innerHTML=payMethodsHtml();const pm=document.getElementById('paymo');if(pm)pm.innerHTML=payChipsHtml();if(!document.getElementById('pcp')){const lb=document.querySelector('#payf label[for="pm"]');if(lb)lb.insertAdjacentHTML('beforebegin',payCouponHtml())}payFillAmt();const sel=document.getElementById('pm'),ms=(i&&i.methods)||[];
       if(sel)sel.innerHTML=ms.map(m=>'<option value="'+esc(_(PAYT[m.t]||PAYT.ot))+'">'+esc(_(PAYT[m.t]||PAYT.ot))+'</option>').join('')+'<option value="'+esc(_('أخرى'))+'">'+esc(_('أخرى'))+'</option>'}
     else payDraw()}}).catch(()=>{U.pay.info=null;if(U.payOpen)payDraw()})};
   if(to)go(to);
@@ -3285,6 +3288,14 @@ FX.payback=function(){U.payOpen=false;render()};
 FX.paymo=function(d){U.pay.months=+d.v;document.querySelectorAll('#paymo .chip').forEach(b=>{const on=+b.dataset.v===U.pay.months;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});payFillAmt()};
 FX.paycopy=function(d){const v=d.v||'';const done=()=>toast(_('اتنسخ ✓'));
   try{navigator.clipboard.writeText(v).then(done,()=>{const t=document.createElement('textarea');t.value=v;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){}t.remove()})}catch(e){toast(v)}};
+FX.paycoupon=function(){
+  const v=((document.getElementById('pcp')||{}).value||'').trim().toUpperCase(),msg=document.getElementById('pcpmsg');
+  const c=((U.pay.info&&U.pay.info.coupons)||[]).find(x=>String(x.c||'').toUpperCase()===v);
+  if(!v||!c){U.pay.coupon=null;if(msg)msg.textContent=v?_('الكود غير صحيح'):'';payRefreshChips();return}
+  U.pay.coupon={c:String(c.c).toUpperCase(),p:Math.min(90,Math.max(1,+c.p||0))};
+  if(msg)msg.textContent=_('تم تطبيق خصم ')+U.pay.coupon.p+'%'+(payBase(U.pay.months)?'':' ('+_('هيتحسب على السعر اللي يتفق عليه')+')');
+  const a=document.getElementById('pa');if(a)a.dataset.auto='1';payRefreshChips()};
+function payRefreshChips(){const pm=document.getElementById('paymo');if(pm)pm.innerHTML=payChipsHtml();const a=document.getElementById('pa');if(a&&a.dataset.auto==='1')a.value='';payFillAmt()}
 FX.paycancel=function(d){CLOUD.deletePayReq(d.id).then(()=>toast(_('اتلغى الطلب'))).catch(()=>toast(_('تعذر التنفيذ، جرّب تاني')))};
 document.addEventListener('change',async function(e){
   const f=e.target;if(!f||f.id!=='pshot'||!f.files||!f.files[0])return;
@@ -3307,7 +3318,7 @@ FX.paysend=async function(){
   if((C.payOut||[]).some(r=>r.status==='pending')){toast(_('طلبك الأخير لسه بيتراجع'));return}
   U.pay.busy=true;const b=document.getElementById('paysend');if(b){b.disabled=true;b.textContent=_('بيتبعت…')}
   try{
-    await CLOUD.createPayReq({from:C.user.uid,to,role:isCoach()?'coach':'client',name,phone,months:U.pay.months,amount,method:v('pm')||'',senderNo:sender,shot:U.pay.shot,note:v('pnote'),ts:Date.now(),status:'pending'});
+    await CLOUD.createPayReq({from:C.user.uid,to,role:isCoach()?'coach':'client',name,phone,months:U.pay.months,amount,method:v('pm')||'',senderNo:sender,coupon:U.pay.coupon?U.pay.coupon.c:'',due:payPrice(U.pay.months)||0,shot:U.pay.shot,note:v('pnote'),ts:Date.now(),status:'pending'});
     try{pushNotify(to,name,_('طلب اشتراك جديد'),'pay')}catch(e){}
     U.pay.shot=null;toast(_('الطلب اتبعت ✓ هيتفعّل بعد التأكد من التحويل'));
   }catch(e){toast(_('تعذر الإرسال، جرّب تاني'))}
@@ -3327,7 +3338,7 @@ function payInboxInner(){
   if(!pend.length)h+='<div class="muted">'+esc(_('مفيش طلبات جديدة.'))+'</div>';
   pend.forEach(r=>{h+='<div class="payreq"><div class="row" style="gap:12px;align-items:flex-start"><img class="payshot" alt="'+esc(_('سكرين شوت التحويل'))+'" src="'+esc(r.shot||'')+'" data-act="payzoom" data-id="'+esc(r.id)+'"><div class="grow" style="min-width:0"><b>'+esc(r.name||'')+'</b> <span class="muted" style="font-size:12px">'+esc(r.role==='coach'?_('مدرب'):_('عميل'))+'</span>'+(typeof pidOf==='function'?pidBadge({uid:r.from,role:r.role}):'')
     +'<div>'+esc(payMonthsTxt(r.months))+' · <b>'+esc(r.amount)+'</b></div><div class="muted" style="font-size:12px;overflow-wrap:anywhere">'+esc(r.method||'')+' · '+esc(_('من: '))+'<span dir="ltr">'+esc(r.senderNo||'')+'</span></div>'
-    +'<div class="muted" style="font-size:12px">'+esc(_('موبايل: '))+'<span dir="ltr">'+esc(r.phone||'')+'</span> · '+esc(payTime(r.ts))+'</div>'+(r.note?'<div class="muted" style="font-size:12px">'+esc(r.note)+'</div>':'')+'</div></div>'
+    +'<div class="muted" style="font-size:12px">'+esc(_('موبايل: '))+'<span dir="ltr">'+esc(r.phone||'')+'</span> · '+esc(payTime(r.ts))+'</div>'+(r.coupon?'<div class="muted" style="font-size:12px">'+esc(_('كوبون: '))+'<span dir="ltr">'+esc(r.coupon)+'</span>'+(r.due?' · '+esc(_('المفروض يدفع: '))+esc(r.due):'')+'</div>':'')+(r.note?'<div class="muted" style="font-size:12px">'+esc(r.note)+'</div>':'')+'</div></div>'
     +'<button class="btn block" style="margin-top:10px" data-act="payok" data-id="'+esc(r.id)+'">✓ '+esc(_('تفعيل '))+esc(payMonthsTxt(r.months))+'</button><div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">'
     +'<input id="prn_'+esc(r.id)+'" maxlength="120" placeholder="'+esc(_('سبب الرفض (اختياري)'))+'" aria-label="'+esc(_('سبب الرفض (اختياري)'))+'" style="flex:1 1 130px;min-width:0"><button class="btn line sm" data-act="payno" data-id="'+esc(r.id)+'">✕ '+esc(_('رفض'))+'</button></div></div>'});
   if(done.length)h+='<div class="muted" style="font-size:12px;margin-top:12px">'+esc(_('آخر القرارات'))+'</div>'+done.map(r=>'<div class="row sp" style="margin-top:6px;font-size:13px"><span>'+esc(r.name||'')+' · '+esc(payMonthsTxt(r.months))+'</span>'+payStat(r.status)+'</div>').join('');
@@ -3365,6 +3376,7 @@ function payInfoCard(){
    +ms.map((m,k)=>'<div class="pmeth" style="flex-wrap:wrap"><select id="pi_t'+k+'" aria-label="'+esc(_('النوع'))+'" style="flex:1 1 120px">'+Object.keys(PAYT).map(t=>'<option value="'+t+'"'+(m.t===t?' selected':'')+'>'+esc(_(PAYT[t]))+'</option>').join('')+'</select>'
      +'<input id="pi_n'+k+'" maxlength="40" inputmode="tel" value="'+esc(m.n||'')+'" placeholder="'+esc(_('الرقم / العنوان'))+'" aria-label="'+esc(_('الرقم / العنوان'))+'" style="flex:2 1 150px;direction:ltr"><input id="pi_h'+k+'" maxlength="40" value="'+esc(m.h||'')+'" placeholder="'+esc(_('اسم صاحب الحساب (اختياري)'))+'" aria-label="'+esc(_('اسم صاحب الحساب (اختياري)'))+'" style="flex:1 1 100%"></div>').join('')
    +'<label class="f" style="display:block;margin-top:10px">'+esc(_('الأسعار (جنيه)'))+'</label><div class="grid2" style="grid-template-columns:repeat(2,1fr)">'+[1,2,3,6].map(m=>'<div><span class="muted" style="font-size:12px">'+esc(payMonthsTxt(m))+'</span><input id="pi_p'+m+'" inputmode="numeric" maxlength="7" value="'+esc((i.prices&&i.prices[m])||'')+'" aria-label="'+esc(payMonthsTxt(m))+'"></div>').join('')+'</div>'
+   +'<label class="f" style="display:block;margin-top:10px">'+esc(_('أكواد الخصم (اختياري)'))+'</label>'+[0,1,2].map(k=>{const c=((i.coupons||[])[k])||{};return '<div class="row" style="gap:8px;margin-top:6px"><input id="pi_cc'+k+'" maxlength="20" value="'+esc(c.c||'')+'" placeholder="'+esc(_('الكود'))+'" aria-label="'+esc(_('الكود'))+'" style="flex:2;direction:ltr;text-transform:uppercase"><input id="pi_cp'+k+'" inputmode="numeric" maxlength="2" value="'+esc(c.p||'')+'" placeholder="%" aria-label="%" style="flex:1"></div>'}).join('')
    +'<label class="f" for="pi_note" style="display:block;margin-top:10px">'+esc(_('الأسعار وملاحظات (اختياري)'))+'</label><textarea id="pi_note" rows="3" maxlength="400" style="width:100%" placeholder="'+esc(_('مثال: شهر 300 · 3 شهور 800'))+'">'+esc(i.note||'')+'</textarea>'
    +'<button class="btn block" style="margin-top:10px" data-act="payinfosave">'+esc(_('حفظ'))+'</button></div>';
 }
@@ -3373,7 +3385,8 @@ FX.payinfosave=async function(){
     ms.push({t:(document.getElementById('pi_t'+k)||{}).value||'ot',n:n.slice(0,40),h:((document.getElementById('pi_h'+k)||{}).value||'').trim().slice(0,40)})}
   const note=((document.getElementById('pi_note')||{}).value||'').trim().slice(0,400);
   const prices={};[1,2,3,6].forEach(m=>{const v=pf(((document.getElementById('pi_p'+m)||{}).value||'').trim());if(v>0&&v<1000000)prices[m]=v});
-  try{await CLOUD.setPayInfo(C.user.uid,{methods:ms,note,prices});C.myPay={methods:ms,note,prices};toast(_('اتحفظت بيانات الدفع ✓'))}catch(e){toast(_('تعذر الحفظ، جرّب تاني'))}
+  const coupons=[];for(let k=0;k<3;k++){const c=((document.getElementById('pi_cc'+k)||{}).value||'').trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,20),pp=Math.round(pf(((document.getElementById('pi_cp'+k)||{}).value||'').trim()));if(c&&pp>=1&&pp<=90)coupons.push({c,p:pp})}
+  try{await CLOUD.setPayInfo(C.user.uid,{methods:ms,note,prices,coupons});C.myPay={methods:ms,note,prices,coupons};toast(_('اتحفظت بيانات الدفع ✓'))}catch(e){toast(_('تعذر الحفظ، جرّب تاني'))}
 };
 function payAcctCard(){
   const p=C.profile||{},u=effUntil(p),s=accState(p);
@@ -3498,6 +3511,30 @@ FX.afadd=async function(d){const c=((C.allCl&&C.allCl.list)||[]).find(x=>x.uid==
 let afT=null;document.addEventListener('input',e=>{if(e.target&&e.target.id==='afq'){U.afq=e.target.value;clearTimeout(afT);afT=setTimeout(afPaint,250)}});
 (function(){const va=vAdmin;vAdmin=function(){return afHtml()+va.apply(this,arguments)};
   const a=renderCoachApp;renderCoachApp=function(){const x=a.apply(this,arguments);try{if(document.getElementById('afq')&&(U.afq||'').trim().length>=2)afPaint()}catch(e){}return x}})();
+
+/* ===== admin: statistics ===== */
+function stHtml(){return '<div class="card" id="stcard"><div class="row sp"><h3 style="margin:0">📊 '+esc(_('إحصائيات'))+'</h3><button class="btn line sm" data-act="stload">'+esc(_('عرض / تحديث'))+'</button></div><div id="stbox" aria-live="polite"></div></div>'}
+function stBar(label,val,max,col){return '<div class="row" style="gap:8px;margin-top:6px;font-size:12px"><span style="width:64px;flex:none" class="muted">'+esc(label)+'</span><div style="flex:1;background:var(--surface2);border-radius:6px;height:14px;overflow:hidden"><div style="height:100%;width:'+(max?Math.round(val/max*100):0)+'%;background:'+(col||'var(--flame)')+'"></div></div><b style="width:28px;text-align:end;flex:none">'+val+'</b></div>'}
+function stBox(){return document.getElementById('stbox')}
+FX.stload=async function(){
+  const box=stBox();if(!box)return;box.innerHTML='<div class="muted" style="margin-top:8px">'+esc(_('بيحسب…'))+'</div>';
+  C.allCl=null;const L=await afLoad(),co=C.coaches||[],now=Date.now(),D=864e5;
+  const cnt={active:0,expired:0,pending:0,blocked:0};L.forEach(c=>{const s=accState(c);cnt[s]=(cnt[s]||0)+1});
+  const n7=L.filter(c=>c.createdAt&&now-c.createdAt<=7*D).length,n30=L.filter(c=>c.createdAt&&now-c.createdAt<=30*D).length;
+  const wk=[];for(let i=7;i>=0;i--){const a=now-(i+1)*7*D,b=now-i*7*D;wk.push(L.filter(c=>c.createdAt&&c.createdAt>a&&c.createdAt<=b).length)}
+  const mx=Math.max(1,...wk);
+  const by={};L.forEach(c=>{if(c.coachId&&accState(c)==='active')by[c.coachId]=(by[c.coachId]||0)+1});
+  const top=Object.keys(by).map(id=>({id,n:by[id],name:((co.find(x=>x.uid===id)||{}).name)||'—'})).sort((a,b)=>b.n-a.n).slice(0,5);
+  const ap=(C.payIn||[]).filter(r=>r.status==='approved'),mk=d=>d.getFullYear()*12+d.getMonth(),cur=mk(new Date());
+  const thisM=ap.filter(r=>mk(new Date(r.decidedAt||r.ts))===cur);
+  const cell=(v,l,c)=>'<div style="flex:1 1 90px;background:var(--surface2);border-radius:12px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:800;color:'+(c||'var(--fg)')+'">'+v+'</div><div class="muted" style="font-size:12px">'+esc(l)+'</div></div>';
+  box.innerHTML='<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">'+cell(co.length,_('مدربين'))+cell(L.length,_('عملاء'))+cell(cnt.active||0,_('اشتراك ساري'),'var(--ok)')+cell(cnt.expired||0,_('منتهي'),'var(--danger)')+cell(cnt.pending||0,_('منتظر تفعيل'))+'</div>'
+   +'<div class="muted" style="font-size:12px;margin-top:12px">'+esc(_('عملاء جداد: '))+n7+' '+esc(_('آخر 7 أيام'))+' · '+n30+' '+esc(_('آخر 30 يوم'))+'</div>'
+   +'<div class="muted" style="font-size:12px;margin-top:10px">'+esc(_('عملاء جداد كل أسبوع (آخر 8 أسابيع)'))+'</div>'+wk.map((v,i)=>stBar(i===7?_('الحالي'):'-'+(7-i),v,mx)).join('')
+   +(top.length?'<div class="muted" style="font-size:12px;margin-top:12px">'+esc(_('أكتر المدربين عملاء فعّالين'))+'</div>'+top.map(t=>stBar(t.name.split(' ')[0],t.n,top[0].n,'var(--ok)')).join(''):'')
+   +'<div class="muted" style="font-size:12px;margin-top:12px">'+esc(_('اشتراكات اتفعّلت الشهر ده: '))+thisM.length+' · '+thisM.reduce((t,r)=>t+(+r.amount||0),0)+' '+esc(_('ج'))
+   +(L.length>=500?'<br>'+esc(_('الإحصائيات بتغطي أول 500 عميل.')):'')+'</div>'};
+(function(){const va=vAdmin;vAdmin=function(){return stHtml()+va.apply(this,arguments)}})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
