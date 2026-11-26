@@ -1245,5 +1245,7 @@ window.EN={
 "مدربك": "Your coach",
 "سجّل أكل": "Log food",
 "أكل النهاردة": "Today's food",
-"أضف": "Add"
+"أضف": "Add",
+"فوق": "Up",
+"تحت": "Down"
 };

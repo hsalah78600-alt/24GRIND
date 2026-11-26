@@ -1824,7 +1824,7 @@ function planSummary(c,d,t){
 }
 function vPlanEditor(){
   const c=U.cc.sel,d=U.cc.detail,e=U.cc.edit,p=d.T.profile,auto=targets(p,null),tg=e.targets||{};
-  const exN=id=>(EXS.concat(d.T.customEx||[]).find(x=>x.id===id)||{n:id}).n;
+  const exN=id=>(allEx().concat(d.T.customEx||[]).find(x=>x.id===id)||{n:id}).n;
   const inp=(path,ph,lab,val)=>{const id='cf_'+path.replace(/\./g,'_');return '<div><label class="f" for="'+id+'">'+lab+'</label><input id="'+id+'" inputmode="decimal" data-cf="'+path+'" placeholder="'+esc(ph)+'" value="'+esc(val==null?'':val)+'"></div>'};
   let h=_('<button class="back" data-act="cplanback">← رجوع (التعديلات محفوظة كمسودة)</button><h2 style="margin-top:4px">خطة ')+esc(c.name||_('العميل'))+'</h2>'+draftBanner(c.uid);
   h+=aiPlanBox();h+=aiOrgBox();
@@ -1839,7 +1839,7 @@ function vPlanEditor(){
   }else{
     h+=_('<div class="grid2"><div><label class="f" for="cf_program_name">اسم البرنامج</label><input id="cf_program_name" data-cf="program.name" value="')+esc(pg.name||'')+_('"></div><div><label class="f" for="cf_program_sets">مجموعات لكل تمرين</label><input id="cf_program_sets" inputmode="numeric" data-cf="program.sets" placeholder="3" value="')+esc(pg.sets||'')+'"></div></div>';
     pg.days.forEach((dy,i)=>{h+='<div class="card" style="margin-top:10px"><div class="row sp"><input data-cf="program.days.'+i+'.n" value="'+esc(dy.n)+_('" aria-label="اسم اليوم" style="max-width:70%"><button class="x" data-act="cdayrm" data-i="')+i+_('" aria-label="مسح اليوم">✕</button></div>')
-      +dy.ex.map((id,j)=>'<div class="item"><div class="grow">'+esc(exN(id))+'</div><button class="x" data-act="cexrm" data-i="'+i+'" data-j="'+j+_('" aria-label="شيل التمرين">✕</button></div>')).join('')
+      +dy.ex.map((id,j)=>'<div class="item"><div class="grow">'+planExName(id,exN)+'</div><button class="x" data-act="cexup" data-i="'+i+'" data-j="'+j+'" aria-label="'+_('فوق')+'">▲</button><button class="x" data-act="cexdn" data-i="'+i+'" data-j="'+j+'" aria-label="'+_('تحت')+'">▼</button><button class="x" data-act="cexrm" data-i="'+i+'" data-j="'+j+_('" aria-label="شيل التمرين">✕</button></div>')).join('')
       +'<button class="btn alt sm" style="margin-top:8px" data-act="cexadd" data-i="'+i+_('">+ تمرين</button></div>')});
     h+=_('<div class="row" style="margin-top:10px"><button class="btn alt sm" data-act="cdayadd">+ يوم</button><button class="btn danger sm" data-act="cprogclear">مسح البرنامج</button></div>');
   }
@@ -1868,7 +1868,7 @@ async function saveClientPlan(){
   const pg=e.program;
   if(pg&&pg.days.length){
     const days=pg.days.map((x,i)=>({n:(x.n||'').trim()||(_('يوم ')+(i+1)),ex:x.ex.slice()})).filter(x=>x.ex.length);
-    if(days.length)plan.program={name:(pg.name||'').trim(),sets:num(pg.sets),days};
+    if(days.length){plan.program={name:(pg.name||'').trim(),sets:num(pg.sets),days};const used={};days.forEach(x=>x.ex.forEach(i=>used[i]=1));const cx=(pg.cx||[]).filter(x=>used[x.id]&&(x.n||'').trim()).map(x=>({id:x.id,n:x.n.trim(),m:x.m||'',e:x.e||''}));if(cx.length)plan.program.cx=cx}
   }
   toast(_('جاري الحفظ…'));
   try{await CLOUD.setPlan(c.uid,plan);U.cc.detail.plan=plan;U.cc.edit=null;dropDraft(c.uid);renderCoachApp();window.scrollTo(0,0);toast(_('اتحفظت الخطة وهتظهر عند العميل'))}
@@ -2027,7 +2027,7 @@ function renderLayer(){
   if(!m){L.innerHTML='';return}
   let b='';
   if(m==='picker'){
-    b=_('<div class="row sp"><h3 style="margin:0">اختار تمرين</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div><input id="psearch" placeholder="دوّر على تمرين" aria-label="بحث" style="margin:10px 0" value="')+esc(U.pq)+'">'+chips([['الكل','الكل']].concat(MUSCLES.map(x=>[x,x])),U.pm,'pm')+'<div id="plist">'+pickerList(U.pq,U.pm)+'</div>'+(U.pickMode==='cplan'?'':_('<div class="card" style="margin-top:10px"><h3>تمرين جديد</h3><div class="grid2"><input id="cxn" placeholder="اسم التمرين" aria-label="اسم التمرين"><select id="cxm" aria-label="العضلة">')+MUSCLES.map(x=>'<option value="'+x+'">'+_(x)+'</option>').join('')+_('</select></div><button class="btn block" style="margin-top:10px" data-act="addcustomex">أضف التمرين</button></div>'));
+    b=_('<div class="row sp"><h3 style="margin:0">اختار تمرين</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div><input id="psearch" placeholder="دوّر على تمرين" aria-label="بحث" style="margin:10px 0" value="')+esc(U.pq)+'">'+chips([['الكل','الكل']].concat(MUSCLES.map(x=>[x,x])),U.pm,'pm')+'<div id="plist">'+pickerList(U.pq,U.pm)+'</div>'+(_('<div class="card" style="margin-top:10px"><h3>تمرين جديد</h3><div class="grid2"><input id="cxn" placeholder="اسم التمرين" aria-label="اسم التمرين"><select id="cxm" aria-label="العضلة">')+MUSCLES.map(x=>'<option value="'+x+'">'+_(x)+'</option>').join('')+_('</select></div><button class="btn block" style="margin-top:10px" data-act="addcustomex">أضف التمرين</button></div>'));
   }else if(m==='exinfo'&&U.exi&&exLib(U.exi)){
     const x=exLib(U.exi);
     b='<div class="row sp"><h3 style="margin:0">'+esc(_(x.n))+_('</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div>')
@@ -2171,7 +2171,7 @@ document.addEventListener('click',function(ev){
    case 'unpick':{if(exRm(d.id)){exMark(d.id);toast(_('اتشال التمرين'))}else toast(_('التمرين مش مضاف'));break}
    case 'exadd':{if(exAdd(d.id))toast(_('اتضاف التمرين'));exClose();break}
    case 'exrm':{if(exRm(d.id))toast(_('اتشال التمرين'));else toast(_('التمرين مش مضاف'));exClose();break}
-   case 'addcustomex':{const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();S.customEx.push({id,n,m:$('#cxm').value,e:_('مخصص')});save();
+   case 'addcustomex':{if(U.pickMode==='cplan'&&U.cc&&U.cc.edit&&U.cc.edit.program){addPlanEx();break}const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();S.customEx.push({id,n,m:$('#cxm').value,e:_('مخصص')});save();
      if(U.pickMode==='routine'&&U.re){U.re.ex.push(id);U.modal='routine'}else if(S.active){S.active.exercises.push(newEx(id));U.modal=null}render();break}
    case 'addset':{const e=S.active.exercises[+d.i];const l=e.sets[e.sets.length-1]||{};e.sets.push({kg:l.kg||'',reps:l.reps||'',done:false});saveLocal();render();break}
    case 'delset':{const e=S.active.exercises[+d.i];if(e.sets.length>1)e.sets.pop();saveLocal();render();break}
@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='39';
+const APP_BUILD='40';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3596,6 +3596,37 @@ function dashHtml(){
   try{const a=h.replace(/<div class="card"><div class="streak">[\s\S]*?<\/i><\/div><\/div>/,'\u0001');
     if(a!==h){h=a.replace(/<div class="card"><div class="row sp"><h3 style="margin:0">[^<]*<\/h3><button class="btn alt sm" data-act="tab" data-v="food">[^<]*<\/button><\/div>[\s\S]*?<\/i><\/div><\/div>/,'');h=h.replace('\u0001',dashHtml())}}catch(e){}
   return h}})();
+
+/* ===== free plan editing + bidi-safe user text ===== */
+function planCx(){
+  try{
+    if(U.cc&&U.cc.edit&&U.cc.edit.program)return U.cc.edit.program.cx||[];
+    const pg=C.plan&&C.plan.program;return (pg&&pg.cx)||[];
+  }catch(e){return[]}
+}
+(function(){const b=S_customEx;S_customEx=function(){const a=b(),x=planCx();if(!x.length)return a;const ids={};a.forEach(e=>ids[e.id]=1);return a.concat(x.filter(e=>!ids[e.id]))}})();
+function planExName(id,exN){
+  const pg=U.cc&&U.cc.edit&&U.cc.edit.program,k=pg&&(pg.cx||[]).findIndex(x=>x.id===id);
+  if(pg&&k>=0)return '<input dir="auto" data-cf="program.cx.'+k+'.n" value="'+esc(pg.cx[k].n)+'" aria-label="'+esc(_('اسم التمرين'))+'" style="margin:0">';
+  return '<span dir="auto">'+esc(exN(id))+'</span>';
+}
+function addPlanEx(){
+  const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));return}
+  const pg=U.cc.edit.program;pg.cx=pg.cx||[];
+  const id='pc'+uid();pg.cx.push({id,n,m:$('#cxm').value,e:_('مخصص')});
+  pg.days[U.pi].ex.push(id);U.modal=null;renderLayer();renderCoachApp();toast(_('اتضاف التمرين'));
+}
+(function(){
+  const mv=(d,s)=>{const a=U.cc.edit.program.days[+d.i].ex,j=+d.j,t=j+s;if(t<0||t>=a.length)return;const x=a[j];a[j]=a[t];a[t]=x;renderCoachApp()};
+  FX.cexup=d=>mv(d,-1);FX.cexdn=d=>mv(d,1);
+})();
+/* user-typed text: direction follows its own language (English stays left-to-right inside Arabic UI) */
+(function(){
+  let t=0;
+  const fix=()=>{t=0;document.querySelectorAll('.item .grow,.bub,textarea,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([inputmode])').forEach(e=>{if(!e.hasAttribute('dir'))e.setAttribute('dir','auto')})};
+  new MutationObserver(()=>{if(!t)t=setTimeout(fix,30)}).observe(document.body,{childList:true,subtree:true});
+  fix();
+})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
