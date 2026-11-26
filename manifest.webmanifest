@@ -1,5 +1,5 @@
 {
-  "name": "24 GRIND | جرايند",
+  "name": "24 GRIND",
   "short_name": "24 GRIND",
   "description": "تطبيق لياقة: تمارين، أكل، تقدم، وتواصل مع مدربك",
   "lang": "ar",
@@ -28,7 +28,7 @@
       "purpose": "maskable"
     }
   ],
-  "id": "./forma",
+  "id": "./24grind",
   "categories": [
     "health",
     "fitness",
