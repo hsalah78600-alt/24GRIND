@@ -2704,7 +2704,7 @@ function clientsCsv(){
   return '﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\n');
 }
 function coachTools(){
-  if(!isCoach()||isAdminUser())return '';
+  if(!isCoach())return '';
   return '<div class="card"><h3 style="margin:0 0 8px">'+_('نسخة احتياطية')+'</h3><div class="muted" style="margin-bottom:10px">'+_('نزّل بيانات عملائك على جهازك. الملف فيه كل حاجة عشان لو احتجتها.')+'</div><div class="grid2"><button class="btn block" data-act="bkall">⬇ '+_('كل البيانات (JSON)')+'</button><button class="btn line block" data-act="clientscsv">⬇ '+_('جدول العملاء (CSV)')+'</button></div></div>';
 }
 FX.clientscsv=()=>download('30grind-clients-'+dkey()+'.csv',clientsCsv());
@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='47';
+const APP_BUILD='48';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3717,7 +3717,7 @@ function weekText(R){
   return L.join('\n');
 }
 function weekCard(){
-  if(!isCoach()||isAdminUser())return '';
+  if(!isCoach())return '';
   const R=weekRows();
   if(!R.length)return '<div class="card"><h3 style="margin:0 0 6px">'+esc(_('تقرير الأسبوع'))+'</h3><div class="muted">'+esc(_('مفيش عملاء نشطين لسه.'))+'</div></div>';
   const need=R.filter(r=>(r.idle!=null&&r.idle>=3)||r.idle==null||(r.adh!=null&&r.adh<50));
@@ -3748,7 +3748,7 @@ async function bkBuild(silent){
   return out;
 }
 async function autoBackup(){
-  if(BK.running||!isCoach()||isAdminUser()||!C.user||!(C.clients||[]).length||!window.indexedDB)return;
+  if(BK.running||!isCoach()||!C.user||!(C.clients||[]).length||!window.indexedDB)return;
   const l=await BK.all();if(l[0]&&Date.now()-l[0].ts<7*864e5)return;
   BK.running=true;
   try{const o=await bkBuild(true);await BK.put({ts:o.ts,n:o.clients.length,json:JSON.stringify(o)});if(U.tab==='acct'||true)try{render()}catch(e){}}catch(e){}
@@ -3758,7 +3758,7 @@ setInterval(()=>{try{autoBackup()}catch(e){}},45000);
 FX.bkdl=async function(d){const l=await BK.all();const r=l.find(x=>String(x.ts)===String(d.ts));if(r)download('30grind-auto-backup-'+dkey(new Date(r.ts))+'.json',r.json)};
 let _bkList=[];
 function bkCard(){
-  if(!isCoach()||isAdminUser())return '';
+  if(!isCoach())return '';
   BK.all().then(l=>{const k=l.map(x=>x.ts).join();if(k!==_bkList.map(x=>x.ts).join()){_bkList=l;try{render()}catch(e){}}});
   return '<div class="card"><h3 style="margin:0 0 6px">'+esc(_('نسخ احتياطي تلقائي'))+'</h3><div class="muted" style="margin-bottom:8px">'+esc(_('التطبيق بيحفظ نسخة من بيانات عملائك على جهازك كل أسبوع (آخر 4 نسخ). افتح التطبيق مرة في الأسبوع على الأقل.'))+'</div>'
    +(_bkList.length?_bkList.map(x=>'<div class="item"><div class="grow">'+esc(fmtD(x.ts))+' · 👥 '+x.n+'</div><button class="btn line sm" data-act="bkdl" data-ts="'+x.ts+'">⬇</button></div>').join(''):'<div class="muted">'+esc(_('لسه مفيش نسخة. أول نسخة بتتعمل تلقائي بعد ما عملاءك يحمّلوا.'))+'</div>')+'</div>';
@@ -3829,7 +3829,7 @@ FX.gdup=async function(){
   GD.busy=false;try{render()}catch(e){}
 };
 async function gdAuto(){
-  if(GD.busy||GD.tried||gdGet('linked')!=='1'||!isCoach()||isAdminUser()||!C.user||!(C.clients||[]).length)return;
+  if(GD.busy||GD.tried||gdGet('linked')!=='1'||!isCoach()||!C.user||!(C.clients||[]).length)return;
   if(Date.now()-(+gdGet('last')||0)<7*864e5)return;
   GD.tried=true;GD.busy=true;
   try{await gdUpload(await gdLatestJson(),false)}catch(e){GD.err=String((e&&e.message)||e)}
@@ -3837,7 +3837,7 @@ async function gdAuto(){
 }
 setInterval(()=>{try{gdAuto()}catch(e){}},60000);
 function gdCard(){
-  if(!isCoach()||isAdminUser())return '';
+  if(!isCoach())return '';
   const last=+gdGet('last')||0,linked=gdGet('linked')==='1';
   const stale=linked&&Date.now()-last>=7*864e5;
   return '<div class="card"><h3 style="margin:0 0 6px">'+esc(_('نسخة دايمة على Google Drive'))+'</h3><div class="muted" style="margin-bottom:8px">'+esc(_('بترفع نسخة من بيانات عملائك على Drive بتاعك (فولدر "30 GRIND Backups") كل أسبوع، وبتفضل محفوظة حتى لو الجهاز اتمسح.'))+'</div>'
