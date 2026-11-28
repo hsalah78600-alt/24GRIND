@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='49';
+const APP_BUILD='50';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3855,7 +3855,7 @@ ar:{t:'دليل 30 GRIND للتدريب الأونلاين',tag:'Discipline Toda
  {h:'2. هيكل الباقات والخدمات',cards:[['المتابعة الكاملة (VIP)','نظام غذائي وتدريبي مفصل + تعديلات مستمرة','المتابعة: يومية وأسبوعية عبر واتساب'],['الأنظمة الجاهزة','نظام غذائي وتدريبي لمدة 3 شهور','المتابعة: بدون متابعة مباشرة']]},
  {h:'3. نظام المتابعة الأسبوعي (Check-in)',sub:'المتطلبات الأسبوعية من العميل:',ul:['القياسات: الوزن على الريق وأخذ المتوسط الأسبوعي.','الصور: صور واضحة (أمامية، جانبية، خلفية) في نفس الإضاءة.','التطور: تحديث بأوزان التمارين لضمان الحمل التدريبي المتدرج.']},
  {h:'4. قواعد التواصل والالتزام',ul:['ساعات الرد: يتم الرد على جميع الاستفسارات خلال الساعات المحددة (6-9 مساءً).','الالتزام: النتائج مرتبطة بنسبة التزامك بالخطة المحددة.','تصوير الأداء: إرسال فيديوهات لتمارين (السكوات، الديدلفت) لتقييم التكنيك.']},
- {h:'5. نموذج البيانات الأولية',p:'يجب على كل مشترك جديد استكمال البيانات التالية عبر Google Form:',ul:['البيانات الحيوية (السن، الطول، الوزن).','التاريخ الصحي والإصابات.','الأدوات المتاحة (جيم كامل أو تمارين منزلية).','تفضيلات الطعام والحساسية.']}
+ {h:'5. نموذج البيانات الأولية',p:'يجب على كل مشترك جديد استكمال البيانات التالية من داخل التطبيق (استمارة البيانات الأولية):',ul:['البيانات الحيوية (السن، الطول، الوزن).','التاريخ الصحي والإصابات.','الأدوات المتاحة (جيم كامل أو تمارين منزلية).','تفضيلات الطعام والحساسية.']}
  ],f:'جميع الحقوق محفوظة لـ 30 GRIND© 2026',btn:'دليل 30 GRIND'},
 en:{t:'30 GRIND Online Training Guide',tag:'Discipline Today, Dominate Tomorrow',
  s:[
@@ -3863,7 +3863,7 @@ en:{t:'30 GRIND Online Training Guide',tag:'Discipline Today, Dominate Tomorrow'
  {h:'2. Packages and services',cards:[['Full follow-up (VIP)','Detailed nutrition and training plan + continuous adjustments','Follow-up: daily and weekly via WhatsApp'],['Ready-made plans','Nutrition and training plan for 3 months','Follow-up: no direct follow-up']]},
  {h:'3. Weekly check-in system',sub:'Weekly requirements from the client:',ul:['Measurements: fasted morning weight, using the weekly average.','Photos: clear photos (front, side, back) in the same lighting.','Progress: update your exercise weights to ensure progressive training load.']},
  {h:'4. Communication and commitment rules',ul:['Reply hours: all questions are answered within the set hours (6–9 PM).','Commitment: results depend on how closely you follow the plan.','Form videos: send videos of exercises (squat, deadlift) so your technique can be assessed.']},
- {h:'5. Intake form',p:'Every new subscriber must complete the following details through the Google Form:',ul:['Vital data (age, height, weight).','Medical history and injuries.','Available equipment (full gym or home workouts).','Food preferences and allergies.']}
+ {h:'5. Intake form',p:'Every new subscriber must complete the following details inside the app (the intake form):',ul:['Vital data (age, height, weight).','Medical history and injuries.','Available equipment (full gym or home workouts).','Food preferences and allergies.']}
  ],f:'All rights reserved to 30 GRIND© 2026',btn:'30 GRIND Guide'}};
 FX.guide=function(){
   const g=GUIDE[LANG==='en'?'en':'ar'];const e2=x=>esc(String(x).replace(/30 GRIND/g,'\u206630 GRIND\u2069'));
@@ -3872,7 +3872,7 @@ FX.guide=function(){
    +(s.cards?s.cards.map(c=>'<div class="card" style="margin:8px 0"><b>'+e2(c[0])+'</b><div style="line-height:1.7;margin-top:4px">'+e2(c[1])+'</div><div class="muted" style="margin-top:4px">'+e2(c[2])+'</div></div>').join(''):'')
    +(s.sub?'<div style="font-weight:700;margin:4px 0">'+e2(s.sub)+'</div>':'')
    +(s.ul?'<ul style="margin:6px 0;padding-inline-start:20px;line-height:1.9">'+s.ul.map(x=>'<li>'+e2(x)+'</li>').join('')+'</ul>':'');
-  fxOpen(fxHead(g.t.replace(/30 GRIND/g,'\u206630 GRIND\u2069'))+'<div class="muted" style="font-weight:700;letter-spacing:.3px;direction:ltr;text-align:start">'+e2(g.tag)+'</div>'+g.s.map(sec).join('')+'<div class="muted" style="text-align:center;margin-top:18px">'+e2(g.f)+'</div><button class="btn block" style="margin-top:16px" data-act="fxclose">'+_('تمام')+'</button>');
+  fxOpen(fxHead(g.t.replace(/30 GRIND/g,'\u206630 GRIND\u2069'))+'<div class="muted" style="font-weight:700;letter-spacing:.3px;direction:ltr;text-align:start">'+e2(g.tag)+'</div>'+g.s.map(sec).join('')+(isCoach()?'':'<button class="btn line block" style="margin-top:14px" data-act="intake">📝 '+e2(LANG==='en'?'Fill in the intake form':'املأ استمارتك الآن')+'</button>')+'<div class="muted" style="text-align:center;margin-top:18px">'+e2(g.f)+'</div><button class="btn block" style="margin-top:16px" data-act="fxclose">'+_('تمام')+'</button>');
 };
 (function(){
   const css=document.createElement('style');
@@ -3892,6 +3892,62 @@ FX.guide=function(){
   };
   const a=render;render=function(){const x=a.apply(this,arguments);try{add()}catch(e){}return x};
   const c=renderCoachApp;renderCoachApp=function(){const x=c.apply(this,arguments);try{add()}catch(e){}return x};
+})();
+
+/* ===== in-app intake form (replaces the Google Form) ===== */
+const EQUIP=[['gym','جيم كامل'],['home','تمارين منزلية'],['both','الاتنين']];
+function intakeDone(){const i=S.profile.intake;return !!(i&&i.ts)}
+FX.intake=function(){
+  const p=S.profile,i=p.intake||{};
+  const f=(id,lab,val,ph,tp)=>'<label class="f" for="'+id+'">'+esc(lab)+'</label><input id="'+id+'" inputmode="decimal" value="'+esc(val==null?'':val)+'" placeholder="'+esc(ph||'')+'">';
+  const ta=(id,lab,val,ph)=>'<label class="f" for="'+id+'" style="margin-top:10px">'+esc(lab)+'</label><textarea id="'+id+'" dir="auto" placeholder="'+esc(ph)+'">'+esc(val||'')+'</textarea>';
+  fxOpen(fxHead(_('استمارة البيانات الأولية'))
+   +'<div class="muted" style="margin-bottom:10px;line-height:1.7">'+esc(_('البيانات دي بتوصل لمدربك بس، وبيبني عليها برنامجك ونظامك الغذائي.'))+'</div>'
+   +'<h4 style="margin:10px 0 4px">'+esc(_('البيانات الحيوية'))+'</h4>'
+   +'<div class="grid2"><div>'+f('it_age',_('السن'),p.age,'25')+'</div><div>'+f('it_h',_('الطول (سم)'),p.height,'175')+'</div></div>'
+   +'<div style="margin-top:8px">'+f('it_w',_('الوزن (كجم)'),p.weight,'75')+'</div>'
+   +'<h4 style="margin:16px 0 4px">'+esc(_('التاريخ الصحي والإصابات'))+'</h4>'
+   +ta('it_inj','',i.injuries,_('أي إصابات، عمليات، أمراض، أو أدوية بتاخدها (اكتب "مفيش" لو مفيش)'))
+   +'<h4 style="margin:16px 0 4px">'+esc(_('الأدوات المتاحة'))+'</h4>'
+   +'<select id="it_eq" aria-label="'+esc(_('الأدوات المتاحة'))+'">'+EQUIP.map(e=>'<option value="'+e[0]+'"'+((i.equip||'gym')===e[0]?' selected':'')+'>'+esc(_(e[1]))+'</option>').join('')+'</select>'
+   +ta('it_eqn','',i.equipNote,_('لو تمارين منزلية: إيه الأدوات اللي عندك؟ (دمبل، مقاومة، بار…)'))
+   +'<h4 style="margin:16px 0 4px">'+esc(_('تفضيلات الطعام والحساسية'))+'</h4>'
+   +ta('it_food','',i.food,_('الأكل اللي بتحبه أو مبتحبوش'))
+   +ta('it_all','',i.allergy,_('أي حساسية أو أكل ممنوع عليك (اكتب "مفيش" لو مفيش)'))
+   +'<div class="muted" style="margin-top:12px;line-height:1.7">'+esc(_('القياسات والصور الأسبوعية بتسجلها من تبويب «تقدّم».'))+'</div>'
+   +'<div id="it_err" role="alert" style="color:var(--danger);margin-top:8px"></div>'
+   +'<button class="btn block" style="margin-top:12px" data-act="intakesave">'+esc(_('احفظ'))+'</button>');
+};
+FX.intakesave=function(){
+  const v=id=>(($('#'+id)||{}).value||'').trim(),n=x=>pf(x);
+  const age=n(v('it_age')),h=n(v('it_h')),w=n(v('it_w')),err=$('#it_err');
+  if(!(age>=10&&age<=100)||!(h>=100&&h<=250)||!(w>=25&&w<=300)){err.textContent=_('اتأكد من السن والطول والوزن');return}
+  const p=S.profile;p.age=age;p.height=h;p.weight=w;p.tch=Object.assign({},p.tch,{age:1,height:1,weight:1});
+  p.intake={injuries:v('it_inj').slice(0,500),equip:v('it_eq')||'gym',equipNote:v('it_eqn').slice(0,300),food:v('it_food').slice(0,500),allergy:v('it_all').slice(0,500),ts:Date.now()};
+  save();fxClose();toast(_('اتحفظت استمارتك ✓'));try{render()}catch(e){}
+};
+function intakeCard(p){
+  const i=p&&p.intake;if(!i||!i.ts)return '<div class="card muted">'+esc(_('العميل لسه مملاش استمارة البيانات الأولية.'))+'</div>';
+  const row=(k,v)=>v?'<div class="item"><div class="grow"><div class="muted" style="font-size:12px">'+esc(k)+'</div><div dir="auto" style="white-space:pre-wrap">'+esc(v)+'</div></div></div>':'';
+  const eq=(EQUIP.find(e=>e[0]===i.equip)||[0,''])[1];
+  return '<div class="card"><h3 style="margin:0 0 6px">'+esc(_('استمارة البيانات الأولية'))+'</h3>'
+   +row(_('التاريخ الصحي والإصابات'),i.injuries)+row(_('الأدوات المتاحة'),(eq?_(eq):'')+(i.equipNote?' — '+i.equipNote:''))+row(_('تفضيلات الطعام'),i.food)+row(_('الحساسية'),i.allergy)+'</div>';
+}
+(function(){
+  const o=vClientDetail;
+  vClientDetail=function(){
+    let h=o.apply(this,arguments);
+    try{const d=U.cc&&U.cc.detail;if(d&&d.T&&d.T.profile){const c=intakeCard(d.T.profile),m='<div class="card"><div class="row sp"><h3 style="margin:0">';const k=h.indexOf(m);h=k>-1?h.slice(0,k)+c+h.slice(k):h+c}}catch(e){}
+    return h;
+  };
+  const add=()=>{
+    if(isCoach()||!C.user&&!document.querySelector('.dcoach'))return;
+    const mk=()=>{const b=document.createElement('button');b.className='gbtn';b.dataset.act='intake';b.dataset.itk='1';b.innerHTML='<i>📝</i><span>'+esc(_('استمارة البيانات الأولية'))+'</span>'+(intakeDone()?'':'<b style="color:var(--flame)">!</b>');return b};
+    const g=document.querySelector('.gbtn[data-home]');
+    if(g&&!document.querySelector('.gbtn[data-itk][data-home2]')){const b=mk();b.dataset.home2='1';g.insertAdjacentElement('afterend',b)}
+    document.querySelectorAll('.gbtn:not([data-home]):not([data-itk])').forEach(x=>{const h=x.parentNode;if(h&&!h.querySelector('[data-itk]')){const b=mk();b.style.marginTop='0';b.style.marginBottom='10px';h.insertBefore(b,x)}});
+  };
+  const a=render;render=function(){const x=a.apply(this,arguments);try{add()}catch(e){}return x};
 })();
 
 /* ================= init ================= */
