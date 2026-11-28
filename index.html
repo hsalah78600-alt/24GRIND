@@ -483,9 +483,9 @@ const dayMeals=(k=dkey())=>S.meals[k]||[];
 function dayTotals(k){return dayMeals(k).reduce((a,m)=>({k:a.k+m.k,p:a.p+m.p,c:a.c+m.c,f:a.f+m.f}),{k:0,p:0,c:0,f:0})}
 const est1=(kg,r)=>kg*(1+r/30);
 const isSrv=f=>!f.u||f.u==='srv';
-const fName=f=>(LANG==='en'&&f.e)?f.e:f.n;
+const fName=f=>(LANG==='en'&&f.e)?f.e:((f.n2&&hasAr(f.n)!==(LANG==='ar')&&hasAr(f.n2)===(LANG==='ar'))?f.n2:f.n);
 const unitLbl=u=>u==='ml'?_('مل'):_('جم');
-const custFood=f=>Object.assign({cat:'mine',e:'',s:[]},f,{q:norm((f.n||'')+' '+(f.e||''))});
+const custFood=f=>Object.assign({cat:'mine',e:'',s:[]},f,{q:norm((f.n||'')+' '+(f.e||'')+' '+(f.n2||''))});
 function findFood(n){const c=S.customFoods.find(f=>f.n===n);return c?custFood(c):FOODS.find(f=>f.n===n)}
 function calcFood(f,g){const r=(+g||0)/100,r1=n=>Math.round(n*10)/10;return{k:Math.round(f.k*r),p:r1(f.p*r),c:r1(f.c*r),f:r1(f.f*r)}}
 function mealEntry(f,g,meal){const x=calcFood(f,g);return{id:uid(),meal,name:f.n,fid:f.n,g:+g,u:f.u,k:x.k,p:x.p,c:x.c,f:x.f,b:{k:f.k,p:f.p,c:f.c,f:f.f}}}
@@ -498,7 +498,7 @@ function foodMatches(q,cat,noCustom){
     if(cat==='fav'&&!S.favFoods.includes(f.n))return false;
     if(cat==='mine'&&f.cat!=='mine')return false;
     if(cat&&!['all','fav','mine'].includes(cat)&&f.cat!==cat)return false;
-    return !qq||f.q.includes(qq)||biHit([f.n,f.e],qq)});
+    return !qq||f.q.includes(qq)||biHit([f.n,f.e,f.n2],qq)});
   const rank=f=>(S.favFoods.includes(f.n)?0:2)+(qq&&f.q.split(/\s+/).some(w=>w.startsWith(qq))?0:1);
   return L.map((f,i)=>[f,i]).sort((a,b)=>rank(a[0])-rank(b[0])||a[1]-b[1]).map(x=>x[0]);
 }
@@ -2171,7 +2171,7 @@ document.addEventListener('click',function(ev){
    case 'unpick':{if(exRm(d.id)){exMark(d.id);toast(_('اتشال التمرين'))}else toast(_('التمرين مش مضاف'));break}
    case 'exadd':{if(exAdd(d.id))toast(_('اتضاف التمرين'));exClose();break}
    case 'exrm':{if(exRm(d.id))toast(_('اتشال التمرين'));else toast(_('التمرين مش مضاف'));exClose();break}
-   case 'addcustomex':{if(U.pickMode==='cplan'&&U.cc&&U.cc.edit&&U.cc.edit.program){addPlanEx();break}const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();S.customEx.push({id,n,n2:(($('#cxn2')||{}).value||'').trim(),m:$('#cxm').value,e:_('مخصص')});save();
+   case 'addcustomex':{if(U.pickMode==='cplan'&&U.cc&&U.cc.edit&&U.cc.edit.program){addPlanEx();break}const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();{const _o={id,n,n2:(($('#cxn2')||{}).value||'').trim(),m:$('#cxm').value,e:_('مخصص')};S.customEx.push(_o);autoTrObj(_o,()=>save())}save();
      if(U.pickMode==='routine'&&U.re){U.re.ex.push(id);U.modal='routine'}else if(S.active){S.active.exercises.push(newEx(id));U.modal=null}render();break}
    case 'addset':{const e=S.active.exercises[+d.i];const l=e.sets[e.sets.length-1]||{};e.sets.push({kg:l.kg||'',reps:l.reps||'',done:false});saveLocal();render();break}
    case 'delset':{const e=S.active.exercises[+d.i];if(e.sets.length>1)e.sets.pop();saveLocal();render();break}
@@ -2207,7 +2207,7 @@ document.addEventListener('click',function(ev){
    case 'addcustom':{const n=$('#dn').value.trim(),k=pf($('#dk').value);if(!n||!(k>0)){toast(_('اكتب الاسم والسعرات'));break}addMeal({name:n,k,p:pf($('#dp').value)||0,c:pf($('#dc').value)||0,f:pf($('#dfa').value)||0});break}
    case 'savecustom':{const n=$('#cn').value.trim(),k=pf($('#ck').value);if(!n||!(k>=0)){toast(_('اكتب الاسم والسعرات لكل 100'));break}
      const u=$('#cu').value==='ml'?'ml':'g',nf={n,e:'',cat:'mine',k,p:pf($('#cp').value)||0,c:pf($('#cc').value)||0,f:pf($('#cf').value)||0,u,s:[]};
-     const i=S.customFoods.findIndex(x=>x.n===n);if(i>=0)S.customFoods[i]=nf;else S.customFoods.push(nf);save();
+     const i=S.customFoods.findIndex(x=>x.n===n);if(i>=0)S.customFoods[i]=nf;else S.customFoods.push(nf);save();autoTrObj(nf,()=>save());
      U.fs={food:custFood(nf),g:pf(($('#cg')||{}).value)||(u==='ml'?250:100),qty:1,meal:U.meal};U.modal='food';render();break}
    case 'delmeal':{const k=dkey();S.meals[k]=dayMeals(k).filter(m=>m.id!==d.id);save();render();break}
    case 'copyyest':{const y=new Date();y.setDate(y.getDate()-1);const src=dayMeals(dkey(y));const k=dkey();S.meals[k]=(S.meals[k]||[]).concat(src.map(m=>Object.assign({},m,{id:uid()})));save();render();break}
@@ -2297,7 +2297,7 @@ document.addEventListener('click',function(ev){
    case 'cplancancel':if(!discardDraft())break;U.cc.edit=null;U.modal=null;renderCoachApp();window.scrollTo(0,0);break;
    case 'cplansave':saveClientPlan();break;
    case 'ctd':{const a=U.cc.edit.trainDays,i=+d.i,x=a.indexOf(i);if(x>=0)a.splice(x,1);else a.push(i);a.sort((p,q)=>p-q);renderCoachApp();break}
-   case 'cpreset':{const k=$('#cpreset').value,e=U.cc.edit;if(k==='__empty')e.program={name:'',sets:'',days:[{n:_('يوم 1'),ex:[]}]};else{const pr=PROGRAMS[k];e.program={name:pr.n,sets:pr.sets||'',days:pr.days.map(x=>({n:x.n,ex:x.ex.slice()}))}}renderCoachApp();break}
+   case 'cpreset':{const k=$('#cpreset').value,e=U.cc.edit;if(k==='__empty')e.program={name:'',sets:'',days:[{n:_('يوم 1'),ex:[]}]};else if(k.indexOf('tpl:')===0){const t=(C.tpls||[]).find(x=>x.id===k.slice(4));if(t)e.program=JSON.parse(JSON.stringify(t.program))}else{const pr=PROGRAMS[k];e.program={name:pr.n,sets:pr.sets||'',days:pr.days.map(x=>({n:x.n,ex:x.ex.slice()}))}}renderCoachApp();break}
    case 'cdayadd':{const pg=U.cc.edit.program;pg.days.push({n:_('يوم ')+(pg.days.length+1),ex:[]});renderCoachApp();break}
    case 'cdayrm':U.cc.edit.program.days.splice(+d.i,1);renderCoachApp();break;
    case 'cexrm':U.cc.edit.program.days[+d.i].ex.splice(+d.j,1);renderCoachApp();break;
@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='45';
+const APP_BUILD='46';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3643,7 +3643,7 @@ function planExName(id,exN){
 function addPlanEx(){
   const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));return}
   const pg=U.cc.edit.program;pg.cx=pg.cx||[];
-  const id='pc'+uid();pg.cx.push({id,n,n2:(($('#cxn2')||{}).value||'').trim(),m:$('#cxm').value,e:_('مخصص')});
+  const id='pc'+uid();{const _o={id,n,n2:(($('#cxn2')||{}).value||'').trim(),m:$('#cxm').value,e:_('مخصص')};pg.cx.push(_o);autoTrObj(_o,()=>{try{renderCoachApp()}catch(e){}})}
   pg.days[U.pi].ex.push(id);U.modal=null;renderLayer();renderCoachApp();toast(_('اتضاف التمرين'));
 }
 (function(){
@@ -3657,6 +3657,113 @@ function addPlanEx(){
   new MutationObserver(()=>{if(!t)t=setTimeout(fix,30)}).observe(document.body,{childList:true,subtree:true});
   fix();
 })();
+
+/* ===== auto-translate custom names (AI), program templates, weekly report, auto backup ===== */
+function autoTrObj(o,done){
+  try{
+    if(!o||!o.n||o.n2||!C.user||typeof aiCall!=='function')return;
+    aiCall('/translate',{texts:[o.n],to:hasAr(o.n)?'en':'ar'}).then(r=>{
+      const t=r&&r.j&&r.j.t&&String(r.j.t[0]||'').trim();
+      if(t&&hasAr(t)!==hasAr(o.n)){o.n2=t.slice(0,60);done&&done()}
+    }).catch(()=>{});
+  }catch(e){}
+}
+/* ----- program templates ----- */
+function tplBox(L){
+  const pg=U.cc&&U.cc.edit&&U.cc.edit.program;if(!pg)return '';
+  return '<div class="card" style="margin-top:10px"><h3>'+esc(_('قوالب البرامج'))+'</h3><div class="muted" style="margin-bottom:8px">'+esc(_('احفظ البرنامج ده كقالب، وطبّقه بعدين على أي عميل من قايمة البرنامج فوق.'))+'</div>'
+   +'<div class="row" style="gap:8px"><input id="tplname" dir="auto" maxlength="40" placeholder="'+esc(_('اسم القالب'))+'" aria-label="'+esc(_('اسم القالب'))+'" value="'+esc(pg.name||'')+'" style="flex:1;min-width:0"><button class="btn sm" data-act="tplsave">'+esc(_('حفظ كقالب'))+'</button></div>'
+   +(L.length?'<div class="row" style="gap:8px;margin-top:10px"><select id="tplsel" aria-label="'+esc(_('اختار قالب'))+'" style="flex:1;min-width:0">'+L.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join('')+'</select><button class="btn line sm" data-act="tplapply">'+esc(_('طبّق على العميل'))+'</button></div>':'')
+   +L.map(t=>'<div class="item"><div class="grow" dir="auto">★ '+esc(t.name)+'</div><button class="x" data-act="tpldel" data-id="'+esc(t.id)+'" aria-label="'+esc(_('مسح'))+'">✕</button></div>').join('')+'</div>';
+}
+(function(){
+  const o=vPlanEditor;
+  vPlanEditor=function(){
+    let h=o.apply(this,arguments);
+    if(C.tpls===undefined&&C.user){C.tpls=null;Promise.resolve(CLOUD.getTpls?CLOUD.getTpls(C.user.uid):[]).then(l=>{C.tpls=l||[];renderCoachApp()}).catch(()=>{C.tpls=[]})}
+    const L=C.tpls||[];
+    h=h.replace(/(id="cpreset"[^>]*>[\s\S]*?)(<\/select>)/,(m,a,b)=>a+L.map(t=>'<option value="tpl:'+esc(t.id)+'">★ '+esc(t.name)+'</option>').join('')+b);
+    h=h.replace('<button class="btn block" data-act="cplansave"',tplBox(L)+'<button class="btn block" data-act="cplansave"');
+    return h;
+  };
+  FX.tplsave=async function(){
+    const pg=U.cc&&U.cc.edit&&U.cc.edit.program;if(!pg)return;
+    const name=(($('#tplname')||{}).value||pg.name||'').trim().slice(0,40);if(!name){toast(_('اكتب اسم القالب'));return}
+    const L=(C.tpls||[]).filter(t=>t.name!==name);if(L.length>=20){toast(_('وصلت للحد الأقصى: 20 قالب'));return}
+    L.push({id:'t'+uid(),name,program:JSON.parse(JSON.stringify(pg))});
+    try{await CLOUD.setTpls(C.user.uid,L);C.tpls=L;toast(_('اتحفظ القالب ✓'));renderCoachApp()}catch(e){toast(_('تعذر الحفظ، جرّب تاني'))}
+  };
+  FX.tplapply=function(){
+    const e=U.cc&&U.cc.edit;const t=(C.tpls||[]).find(x=>x.id===($('#tplsel')||{}).value);if(!e||!t)return;
+    e.program=JSON.parse(JSON.stringify(t.program));toast(_('اتطبّق القالب — راجعه واحفظ'));renderCoachApp();
+  };
+  FX.tpldel=async function(d){
+    const L=(C.tpls||[]).filter(t=>t.id!==d.id);
+    try{await CLOUD.setTpls(C.user.uid,L);C.tpls=L;renderCoachApp()}catch(e){toast(_('تعذر الحفظ، جرّب تاني'))}
+  };
+})();
+/* ----- weekly report ----- */
+function weekRows(){
+  return (C.clients||[]).filter(c=>!c.blocked&&accState(c)==='active').map(c=>{
+    const s=c.summary||{},idle=typeof bcIdle==='function'?bcIdle(c):null,adh=s.adh&&s.adh.all!=null?+s.adh.all:null;
+    return{name:c.name||'—',n:+s.weekN||0,g:+s.weekGoal||4,adh,w:s.weight||'',kcal:s.kcalAvg||0,idle};
+  });
+}
+function weekText(R){
+  const need=R.filter(r=>(r.idle!=null&&r.idle>=3)||r.idle==null||(r.adh!=null&&r.adh<50));
+  const L=[_('تقرير الأسبوع')+' — '+fmtD(Date.now()),_('عملاء نشطين: ')+R.length+' · '+_('تمارين الأسبوع: ')+R.reduce((a,r)=>a+r.n,0),''];
+  if(need.length){L.push(_('محتاجين متابعة:'));need.forEach(r=>L.push('• '+r.name+' — '+(r.idle==null?_('لسه مبدأش'):_('آخر نشاط من ')+r.idle+_n(r.idle,' يوم'))+(r.adh!=null?' · '+r.adh+'%':'')))}
+  L.push('',_('كل العملاء:'));R.forEach(r=>L.push('• '+r.name+': '+r.n+'/'+r.g+' '+_('تمارين')+(r.adh!=null?' · '+_('التزام ')+r.adh+'%':'')+(r.w?' · '+r.w+' kg':'')));
+  return L.join('\n');
+}
+function weekCard(){
+  if(!isCoach()||isAdminUser())return '';
+  const R=weekRows();
+  if(!R.length)return '<div class="card"><h3 style="margin:0 0 6px">'+esc(_('تقرير الأسبوع'))+'</h3><div class="muted">'+esc(_('مفيش عملاء نشطين لسه.'))+'</div></div>';
+  const need=R.filter(r=>(r.idle!=null&&r.idle>=3)||r.idle==null||(r.adh!=null&&r.adh<50));
+  const tot=R.reduce((a,r)=>a+r.n,0),av=R.filter(r=>r.adh!=null),avg=av.length?Math.round(av.reduce((a,r)=>a+r.adh,0)/av.length):null;
+  const best=R.slice().sort((a,b)=>(b.n/b.g)-(a.n/a.g)).slice(0,3).filter(r=>r.n>0);
+  return '<div class="card"><h3 style="margin:0 0 8px">'+esc(_('تقرير الأسبوع'))+'</h3>'
+   +'<div class="grid2"><div class="stat"><b class="num">'+R.length+'</b><span class="muted">'+esc(_('عملاء نشطين'))+'</span></div><div class="stat"><b class="num">'+tot+'</b><span class="muted">'+esc(_('تمارين الأسبوع'))+'</span></div></div>'
+   +(avg!=null?'<div class="muted" style="margin:8px 0">'+esc(_('متوسط الالتزام: '))+avg+'%</div>':'')
+   +(need.length?'<div style="margin-top:6px"><b>⚠ '+esc(_('محتاجين متابعة'))+'</b>'+need.map(r=>'<div class="item"><div class="grow" dir="auto">'+esc(r.name)+'</div><span class="muted num">'+(r.idle==null?esc(_('لسه مبدأش')):r.idle+esc(_n(r.idle,' يوم')))+'</span></div>').join('')+'</div>':'<div class="muted" style="margin-top:6px">✓ '+esc(_('كل العملاء ماشيين كويس'))+'</div>')
+   +(best.length?'<div style="margin-top:10px"><b>🏆 '+esc(_('الأكتر التزاماً'))+'</b>'+best.map(r=>'<div class="item"><div class="grow" dir="auto">'+esc(r.name)+'</div><span class="muted num">'+r.n+'/'+r.g+'</span></div>').join('')+'</div>':'')
+   +'<button class="btn line block" style="margin-top:12px" data-act="weekcopy">'+esc(_('نسخ التقرير'))+'</button></div>';
+}
+FX.weekcopy=async function(){
+  const t=weekText(weekRows());
+  try{await navigator.clipboard.writeText(t);toast(_('اتنسخ التقرير ✓'))}catch(e){
+    const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast(_('اتنسخ التقرير ✓'))}catch(x){toast(_('تعذر النسخ'))}a.remove()}
+};
+/* ----- auto backup (weekly, stored on this device) ----- */
+const BK={db:null,
+  open(){return new Promise((res,rej)=>{if(BK.db)return res(BK.db);const r=indexedDB.open('g30bk',1);r.onupgradeneeded=()=>r.result.createObjectStore('b',{keyPath:'ts'});r.onsuccess=()=>{BK.db=r.result;res(BK.db)};r.onerror=()=>rej(r.error)})},
+  async all(){try{const d=await BK.open();return await new Promise((res,rej)=>{const q=d.transaction('b').objectStore('b').getAll();q.onsuccess=()=>res((q.result||[]).sort((a,b)=>b.ts-a.ts));q.onerror=()=>rej(q.error)})}catch(e){return[]}},
+  async put(rec){const d=await BK.open();await new Promise((res,rej)=>{const t=d.transaction('b','readwrite');t.objectStore('b').put(rec);t.oncomplete=res;t.onerror=()=>rej(t.error)});
+    const l=await BK.all();for(const x of l.slice(4)){await new Promise(r=>{const t=d.transaction('b','readwrite');t.objectStore('b').delete(x.ts);t.oncomplete=r;t.onerror=r})}},
+  running:false};
+async function bkBuild(silent){
+  const L=C.clients||[];const out={app:'30grind',kind:'coach-backup',auto:!!silent,ts:Date.now(),coach:{uid:C.user.uid,name:C.profile&&C.profile.name},clients:[]};
+  for(const c of L){const rec={uid:c.uid,profile:c};try{rec.data=await CLOUD.readChunks(c.uid)}catch(e){rec.data=null}try{rec.plan=await CLOUD.getPlan(c.uid)}catch(e){rec.plan=null}out.clients.push(rec)}
+  return out;
+}
+async function autoBackup(){
+  if(BK.running||!isCoach()||isAdminUser()||!C.user||!(C.clients||[]).length||!window.indexedDB)return;
+  const l=await BK.all();if(l[0]&&Date.now()-l[0].ts<7*864e5)return;
+  BK.running=true;
+  try{const o=await bkBuild(true);await BK.put({ts:o.ts,n:o.clients.length,json:JSON.stringify(o)});if(U.tab==='acct'||true)try{render()}catch(e){}}catch(e){}
+  BK.running=false;
+}
+setInterval(()=>{try{autoBackup()}catch(e){}},45000);
+FX.bkdl=async function(d){const l=await BK.all();const r=l.find(x=>String(x.ts)===String(d.ts));if(r)download('30grind-auto-backup-'+dkey(new Date(r.ts))+'.json',r.json)};
+let _bkList=[];
+function bkCard(){
+  if(!isCoach()||isAdminUser())return '';
+  BK.all().then(l=>{const k=l.map(x=>x.ts).join();if(k!==_bkList.map(x=>x.ts).join()){_bkList=l;try{render()}catch(e){}}});
+  return '<div class="card"><h3 style="margin:0 0 6px">'+esc(_('نسخ احتياطي تلقائي'))+'</h3><div class="muted" style="margin-bottom:8px">'+esc(_('التطبيق بيحفظ نسخة من بيانات عملائك على جهازك كل أسبوع (آخر 4 نسخ). افتح التطبيق مرة في الأسبوع على الأقل.'))+'</div>'
+   +(_bkList.length?_bkList.map(x=>'<div class="item"><div class="grow">'+esc(fmtD(x.ts))+' · 👥 '+x.n+'</div><button class="btn line sm" data-act="bkdl" data-ts="'+x.ts+'">⬇</button></div>').join(''):'<div class="muted">'+esc(_('لسه مفيش نسخة. أول نسخة بتتعمل تلقائي بعد ما عملاءك يحمّلوا.'))+'</div>')+'</div>';
+}
+(function(){const o=coachTools;coachTools=function(){const b=o();return b?weekCard()+b+bkCard():b}})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});

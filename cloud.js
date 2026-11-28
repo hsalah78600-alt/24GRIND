@@ -148,6 +148,15 @@ const Cloud = {
     await s.F.deleteDoc(s.F.doc(s.db, 'users', uid, 'photos', id));
   },
 
+  async getTpls(uid) {
+    const s = await sdk();
+    const snap = await s.F.getDoc(s.F.doc(s.db, 'coachTpl', uid));
+    return snap.exists() ? (snap.data().list || []) : [];
+  },
+  async setTpls(uid, list) {
+    const s = await sdk();
+    await s.F.setDoc(s.F.doc(s.db, 'coachTpl', uid), { list: JSON.parse(JSON.stringify(list)) });
+  },
   async getPlan(uid) {
     const s = await sdk();
     const d = await s.F.getDoc(s.F.doc(s.db, 'users', uid, 'plan', 'current'));
