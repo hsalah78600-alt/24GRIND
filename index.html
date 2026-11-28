@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='48';
+const APP_BUILD='49';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3846,6 +3846,53 @@ function gdCard(){
    +'<button class="btn block" data-act="gdup"'+(GD.busy?' disabled':'')+'>☁ '+esc(linked?_('ارفع الآن'):_('اربط Google Drive وارفع'))+'</button></div>';
 }
 (function(){const o=coachTools;coachTools=function(){const b=o();return b?b+gdCard():b}})();
+
+/* ===== 30 GRIND program guide ===== */
+const GUIDE={
+ar:{t:'دليل 30 GRIND للتدريب الأونلاين',tag:'Discipline Today, Dominate Tomorrow',
+ s:[
+ {h:'1. رؤية البرنامج',p:'أهلاً بك يا بطل في نظام "30 GRIND". هذا الدليل مصمم لضمان وصولك لأقصى استفادة من التدريب الأونلاين وتحقيق نتائج واقعية ومستدامة.'},
+ {h:'2. هيكل الباقات والخدمات',cards:[['المتابعة الكاملة (VIP)','نظام غذائي وتدريبي مفصل + تعديلات مستمرة','المتابعة: يومية وأسبوعية عبر واتساب'],['الأنظمة الجاهزة','نظام غذائي وتدريبي لمدة 3 شهور','المتابعة: بدون متابعة مباشرة']]},
+ {h:'3. نظام المتابعة الأسبوعي (Check-in)',sub:'المتطلبات الأسبوعية من العميل:',ul:['القياسات: الوزن على الريق وأخذ المتوسط الأسبوعي.','الصور: صور واضحة (أمامية، جانبية، خلفية) في نفس الإضاءة.','التطور: تحديث بأوزان التمارين لضمان الحمل التدريبي المتدرج.']},
+ {h:'4. قواعد التواصل والالتزام',ul:['ساعات الرد: يتم الرد على جميع الاستفسارات خلال الساعات المحددة (6-9 مساءً).','الالتزام: النتائج مرتبطة بنسبة التزامك بالخطة المحددة.','تصوير الأداء: إرسال فيديوهات لتمارين (السكوات، الديدلفت) لتقييم التكنيك.']},
+ {h:'5. نموذج البيانات الأولية',p:'يجب على كل مشترك جديد استكمال البيانات التالية عبر Google Form:',ul:['البيانات الحيوية (السن، الطول، الوزن).','التاريخ الصحي والإصابات.','الأدوات المتاحة (جيم كامل أو تمارين منزلية).','تفضيلات الطعام والحساسية.']}
+ ],f:'جميع الحقوق محفوظة لـ 30 GRIND© 2026',btn:'دليل 30 GRIND'},
+en:{t:'30 GRIND Online Training Guide',tag:'Discipline Today, Dominate Tomorrow',
+ s:[
+ {h:'1. Program vision',p:'Welcome, champion, to the "30 GRIND" system. This guide is designed to help you get the most out of online training and reach realistic, lasting results.'},
+ {h:'2. Packages and services',cards:[['Full follow-up (VIP)','Detailed nutrition and training plan + continuous adjustments','Follow-up: daily and weekly via WhatsApp'],['Ready-made plans','Nutrition and training plan for 3 months','Follow-up: no direct follow-up']]},
+ {h:'3. Weekly check-in system',sub:'Weekly requirements from the client:',ul:['Measurements: fasted morning weight, using the weekly average.','Photos: clear photos (front, side, back) in the same lighting.','Progress: update your exercise weights to ensure progressive training load.']},
+ {h:'4. Communication and commitment rules',ul:['Reply hours: all questions are answered within the set hours (6–9 PM).','Commitment: results depend on how closely you follow the plan.','Form videos: send videos of exercises (squat, deadlift) so your technique can be assessed.']},
+ {h:'5. Intake form',p:'Every new subscriber must complete the following details through the Google Form:',ul:['Vital data (age, height, weight).','Medical history and injuries.','Available equipment (full gym or home workouts).','Food preferences and allergies.']}
+ ],f:'All rights reserved to 30 GRIND© 2026',btn:'30 GRIND Guide'}};
+FX.guide=function(){
+  const g=GUIDE[LANG==='en'?'en':'ar'];const e2=x=>esc(String(x).replace(/30 GRIND/g,'\u206630 GRIND\u2069'));
+  const sec=s=>'<h4 style="margin:18px 0 6px">'+e2(s.h)+'</h4>'
+   +(s.p?'<div style="line-height:1.8;margin-bottom:6px">'+e2(s.p)+'</div>':'')
+   +(s.cards?s.cards.map(c=>'<div class="card" style="margin:8px 0"><b>'+e2(c[0])+'</b><div style="line-height:1.7;margin-top:4px">'+e2(c[1])+'</div><div class="muted" style="margin-top:4px">'+e2(c[2])+'</div></div>').join(''):'')
+   +(s.sub?'<div style="font-weight:700;margin:4px 0">'+e2(s.sub)+'</div>':'')
+   +(s.ul?'<ul style="margin:6px 0;padding-inline-start:20px;line-height:1.9">'+s.ul.map(x=>'<li>'+e2(x)+'</li>').join('')+'</ul>':'');
+  fxOpen(fxHead(g.t.replace(/30 GRIND/g,'\u206630 GRIND\u2069'))+'<div class="muted" style="font-weight:700;letter-spacing:.3px;direction:ltr;text-align:start">'+e2(g.tag)+'</div>'+g.s.map(sec).join('')+'<div class="muted" style="text-align:center;margin-top:18px">'+e2(g.f)+'</div><button class="btn block" style="margin-top:16px" data-act="fxclose">'+_('تمام')+'</button>');
+};
+(function(){
+  const css=document.createElement('style');
+  css.textContent='.gbtn{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg);font:inherit;font-weight:700;cursor:pointer;text-align:start}.gbtn i{font-style:normal;font-size:20px}.gbtn span{flex:1}';
+  document.head.appendChild(css);
+  const iso=()=>{
+    const w=document.createTreeWalker(document.body,4);let n;const L=[];
+    while(n=w.nextNode()){if(n.nodeValue.indexOf('30 GRIND')>-1&&n.nodeValue.indexOf('\u2066')<0&&!/SCRIPT|STYLE|TEXTAREA/.test(n.parentNode.tagName)&&/[\u0600-\u06FF]/.test(n.nodeValue))L.push(n)}
+    L.forEach(x=>{x.nodeValue=x.nodeValue.replace(/30 GRIND/g,'\u206630 GRIND\u2069')});
+  };
+  const add=()=>{
+    iso();
+    const g=GUIDE[LANG==='en'?'en':'ar'];
+    const mk=()=>{const b=document.createElement('button');b.className='gbtn';b.dataset.act='guide';b.innerHTML='<i>📖</i><span>'+esc(g.btn)+'</span>';return b};
+    const dc=document.querySelector('.dcoach');if(dc&&!document.querySelector('.dcoach~.gbtn,.gbtn[data-home]')){const b=mk();b.dataset.home='1';dc.insertAdjacentElement('afterend',b)}
+    document.querySelectorAll('[data-act="signout"]').forEach(s=>{const h=s.parentNode;if(h&&!h.querySelector('.gbtn')){const b=mk();b.style.marginTop='0';b.style.marginBottom='10px';h.insertBefore(b,s)}});
+  };
+  const a=render;render=function(){const x=a.apply(this,arguments);try{add()}catch(e){}return x};
+  const c=renderCoachApp;renderCoachApp=function(){const x=c.apply(this,arguments);try{add()}catch(e){}return x};
+})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});
