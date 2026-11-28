@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com; media-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://hassanfit-push.hsalah78600.workers.dev https://world.openfoodfacts.org https://raw.githubusercontent.com wss://*.firebaseio.com; frame-src https://*.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com; media-src 'self' data: blob:; connect-src 'self' https://accounts.google.com https://*.googleapis.com https://*.firebaseio.com https://www.gstatic.com https://hassanfit-push.hsalah78600.workers.dev https://world.openfoodfacts.org https://raw.githubusercontent.com wss://*.firebaseio.com; frame-src https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'; manifest-src 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="description" content="30 GRIND - تطبيق لياقة: تمارين، أكل، تقدم، وتواصل مع مدربك">
 <meta name="color-scheme" content="light dark">
@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='46';
+const APP_BUILD='47';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3764,6 +3764,88 @@ function bkCard(){
    +(_bkList.length?_bkList.map(x=>'<div class="item"><div class="grow">'+esc(fmtD(x.ts))+' · 👥 '+x.n+'</div><button class="btn line sm" data-act="bkdl" data-ts="'+x.ts+'">⬇</button></div>').join(''):'<div class="muted">'+esc(_('لسه مفيش نسخة. أول نسخة بتتعمل تلقائي بعد ما عملاءك يحمّلوا.'))+'</div>')+'</div>';
 }
 (function(){const o=coachTools;coachTools=function(){const b=o();return b?weekCard()+b+bkCard():b}})();
+
+/* ===== permanent backup to the coach's own Google Drive (drive.file scope) ===== */
+const GD={cid:'1040088048282-cq0l8cmmd1cchvijrj8mp248o3923g3t.apps.googleusercontent.com',tok:null,exp:0,busy:false,tried:false,err:''};
+const gdGet=k=>{try{return localStorage.getItem('gr.gd.'+k)}catch(e){return null}};
+const gdSet=(k,v)=>{try{localStorage.setItem('gr.gd.'+k,v)}catch(e){}};
+function gdLoad(){return new Promise((res,rej)=>{
+  if(window.google&&google.accounts&&google.accounts.oauth2)return res();
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=()=>res();s.onerror=()=>rej(new Error('gsi'));document.head.appendChild(s);
+})}
+function gdToken(interactive){return new Promise(async(res,rej)=>{
+  if(GD.tok&&Date.now()<GD.exp-60000)return res(GD.tok);
+  try{await gdLoad()}catch(e){return rej(e)}
+  try{
+    const tc=google.accounts.oauth2.initTokenClient({client_id:GD.cid,scope:'https://www.googleapis.com/auth/drive.file',
+      callback:r=>{if(r&&r.access_token){GD.tok=r.access_token;GD.exp=Date.now()+(+r.expires_in||3600)*1000;res(GD.tok)}else rej(new Error((r&&r.error)||'denied'))},
+      error_callback:e=>rej(new Error((e&&e.type)||'popup'))});
+    tc.requestAccessToken({prompt:interactive?'':'none'});
+  }catch(e){rej(e)}
+})}
+async function gdApi(url,opt,tok){
+  const r=await fetch(url,Object.assign({},opt,{headers:Object.assign({Authorization:'Bearer '+tok},(opt&&opt.headers)||{})}));
+  if(r.status===401){GD.tok=null}
+  if(!r.ok)throw new Error('drive '+r.status);
+  return r;
+}
+async function gdFolder(tok){
+  const q=encodeURIComponent("name='30 GRIND Backups' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  const j=await (await gdApi('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)&spaces=drive',{},tok)).json();
+  if(j.files&&j.files[0])return j.files[0].id;
+  const c=await (await gdApi('https://www.googleapis.com/drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'30 GRIND Backups',mimeType:'application/vnd.google-apps.folder'})},tok)).json();
+  return c.id;
+}
+async function gdUpload(json,interactive){
+  const tok=await gdToken(interactive);
+  const folder=await gdFolder(tok);
+  let body=new Blob([json],{type:'application/json'}),name='30grind-backup-'+dkey()+'.json',mime='application/json';
+  if(body.size>4.5e6&&window.CompressionStream){
+    const cs=new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
+    body=await new Response(cs).blob();name+='.gz';mime='application/gzip';
+  }
+  const bd='g30'+Math.random().toString(36).slice(2);
+  const meta=JSON.stringify({name,parents:[folder],mimeType:mime});
+  const mp=new Blob(['--'+bd+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+meta+'\r\n--'+bd+'\r\nContent-Type: '+mime+'\r\n\r\n',body,'\r\n--'+bd+'--'],{type:'multipart/related; boundary='+bd});
+  await gdApi('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',body:mp},tok);
+  gdSet('linked','1');gdSet('last',String(Date.now()));
+  try{ // keep the newest 12 copies
+    const q=encodeURIComponent("'"+folder+"' in parents and trashed=false");
+    const l=await (await gdApi('https://www.googleapis.com/drive/v3/files?q='+q+'&orderBy=createdTime desc&fields=files(id)&pageSize=100',{},tok)).json();
+    for(const f of (l.files||[]).slice(12))await gdApi('https://www.googleapis.com/drive/v3/files/'+f.id,{method:'DELETE'},tok).catch(()=>{});
+  }catch(e){}
+}
+async function gdLatestJson(){
+  const l=await BK.all();if(l[0]&&Date.now()-l[0].ts<864e5)return l[0].json;
+  const o=await bkBuild(false);const j=JSON.stringify(o);try{await BK.put({ts:o.ts,n:o.clients.length,json:j})}catch(e){}return j;
+}
+FX.gdup=async function(){
+  if(GD.busy)return;GD.busy=true;GD.err='';
+  try{
+    if(!(C.clients||[]).length){toast(_('مفيش عملاء لسه'));GD.busy=false;return}
+    toast(_('بنجهّز النسخة ونرفعها…'));
+    await gdUpload(await gdLatestJson(),true);toast(_('اترفعت على Google Drive ✓'));
+  }catch(e){GD.err=String((e&&e.message)||e);toast(_('تعذر الرفع على Drive. راجع الإعدادات وجرّب تاني.'))}
+  GD.busy=false;try{render()}catch(e){}
+};
+async function gdAuto(){
+  if(GD.busy||GD.tried||gdGet('linked')!=='1'||!isCoach()||isAdminUser()||!C.user||!(C.clients||[]).length)return;
+  if(Date.now()-(+gdGet('last')||0)<7*864e5)return;
+  GD.tried=true;GD.busy=true;
+  try{await gdUpload(await gdLatestJson(),false)}catch(e){GD.err=String((e&&e.message)||e)}
+  GD.busy=false;try{render()}catch(e){}
+}
+setInterval(()=>{try{gdAuto()}catch(e){}},60000);
+function gdCard(){
+  if(!isCoach()||isAdminUser())return '';
+  const last=+gdGet('last')||0,linked=gdGet('linked')==='1';
+  const stale=linked&&Date.now()-last>=7*864e5;
+  return '<div class="card"><h3 style="margin:0 0 6px">'+esc(_('نسخة دايمة على Google Drive'))+'</h3><div class="muted" style="margin-bottom:8px">'+esc(_('بترفع نسخة من بيانات عملائك على Drive بتاعك (فولدر "30 GRIND Backups") كل أسبوع، وبتفضل محفوظة حتى لو الجهاز اتمسح.'))+'</div>'
+   +(linked?'<div class="muted" style="margin-bottom:8px">'+esc(_('آخر رفع: '))+(last?esc(fmtD(last)):'—')+(stale?' · <b style="color:var(--danger)">'+esc(_('محتاج رفع جديد'))+'</b>':'')+'</div>':'')
+   +(GD.err&&!GD.busy?'<div class="muted" style="color:var(--danger);margin-bottom:8px">'+esc(_('آخر محاولة فشلت، دوس ارفع الآن.'))+'</div>':'')
+   +'<button class="btn block" data-act="gdup"'+(GD.busy?' disabled':'')+'>☁ '+esc(linked?_('ارفع الآن'):_('اربط Google Drive وارفع'))+'</button></div>';
+}
+(function(){const o=coachTools;coachTools=function(){const b=o();return b?b+gdCard():b}})();
 
 /* ================= init ================= */
 $('#today').textContent=AR(new Date(),{weekday:'long',day:'numeric',month:'long'});

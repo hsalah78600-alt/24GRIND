@@ -1282,5 +1282,15 @@ window.EN={
 "لسه مفيش نسخة. أول نسخة بتتعمل تلقائي بعد ما عملاءك يحمّلوا.": "No copy yet. The first one is made automatically once your clients' data has loaded.",
 "اختار قالب": "Choose a template",
 "طبّق على العميل": "Apply to client",
-"اتطبّق القالب — راجعه واحفظ": "Template applied — review and save"
+"اتطبّق القالب — راجعه واحفظ": "Template applied — review and save",
+"نسخة دايمة على Google Drive": "Permanent backup on Google Drive",
+"بترفع نسخة من بيانات عملائك على Drive بتاعك (فولدر \"30 GRIND Backups\") كل أسبوع، وبتفضل محفوظة حتى لو الجهاز اتمسح.": "Uploads a copy of your clients' data to your own Drive (folder \"30 GRIND Backups\") every week, and it stays saved even if this device is wiped.",
+"آخر رفع: ": "Last upload: ",
+"محتاج رفع جديد": "Needs a new upload",
+"آخر محاولة فشلت، دوس ارفع الآن.": "Last attempt failed, tap Upload now.",
+"ارفع الآن": "Upload now",
+"اربط Google Drive وارفع": "Connect Google Drive & upload",
+"بنجهّز النسخة ونرفعها…": "Preparing and uploading the backup…",
+"اترفعت على Google Drive ✓": "Uploaded to Google Drive ✓",
+"تعذر الرفع على Drive. راجع الإعدادات وجرّب تاني.": "Couldn't upload to Drive. Check the settings and try again."
 };
