@@ -1,5 +1,5 @@
 /* Hassanfit service worker: يخلّي التطبيق يفتح بدون إنترنت، ويجيب النسخة الجديدة لما يكون في نت. */
-const CACHE = 'hassanfit-v43';
+const CACHE = 'hassanfit-v44';
 const SHELL = ['./', 'index.html', 'cloud.js', 'firebase-config.js', 'push-config.js', 'manifest.webmanifest', 'foods.js', 'lang-en.js', 'exercises.js',
   'fm7-192.png', 'fm7-512.png', 'fm7-touch.png'];
 
