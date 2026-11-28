@@ -2707,15 +2707,15 @@ function coachTools(){
   if(!isCoach()||isAdminUser())return '';
   return '<div class="card"><h3 style="margin:0 0 8px">'+_('نسخة احتياطية')+'</h3><div class="muted" style="margin-bottom:10px">'+_('نزّل بيانات عملائك على جهازك. الملف فيه كل حاجة عشان لو احتجتها.')+'</div><div class="grid2"><button class="btn block" data-act="bkall">⬇ '+_('كل البيانات (JSON)')+'</button><button class="btn line block" data-act="clientscsv">⬇ '+_('جدول العملاء (CSV)')+'</button></div></div>';
 }
-FX.clientscsv=()=>download('forma-clients-'+dkey()+'.csv',clientsCsv());
+FX.clientscsv=()=>download('24grind-clients-'+dkey()+'.csv',clientsCsv());
 FX.coachescsv=function(){
   const rows=[['name','email','phone','status','until','clients']];
   (C.coaches||[]).filter(c=>C.user&&c.uid!==C.user.uid).forEach(c=>rows.push([c.name,c.email,c.phone,accState(c),csvDate(effUntil(c)),(C.cnt||{})[c.uid]]));
-  download('forma-coaches-'+dkey()+'.csv','﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\n'));
+  download('24grind-coaches-'+dkey()+'.csv','﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\n'));
 };
 FX.bkall=async function(d,t){
   const L=C.clients||[];if(!L.length){toast(_('مفيش عملاء لسه'));return}
-  t.disabled=true;const out={app:'forma',kind:'coach-backup',ts:Date.now(),coach:{uid:C.user.uid,name:C.profile&&C.profile.name},clients:[]};
+  t.disabled=true;const out={app:'24grind',kind:'coach-backup',ts:Date.now(),coach:{uid:C.user.uid,name:C.profile&&C.profile.name},clients:[]};
   try{
     let i=0;
     for(const c of L){
@@ -2725,7 +2725,7 @@ FX.bkall=async function(d,t){
       try{rec.plan=await CLOUD.getPlan(c.uid)}catch(e){rec.plan=null}
       out.clients.push(rec);
     }
-    download('forma-backup-'+dkey()+'.json',JSON.stringify(out));
+    download('24grind-backup-'+dkey()+'.json',JSON.stringify(out));
   }catch(e){toast(_('تعذر عمل النسخة'))}
   t.disabled=false;
 };
