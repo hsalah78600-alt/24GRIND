@@ -169,8 +169,8 @@ const Cloud = {
   },
   async watchMessages(uid, cb) {
     const s = await sdk();
-    const q = s.F.query(s.F.collection(s.db, 'users', uid, 'messages'), s.F.orderBy('ts'));
-    return s.F.onSnapshot(q, snap => cb(snap.docs.map(d => Object.assign({ id: d.id }, d.data()))), () => cb([]));
+    const q = s.F.query(s.F.collection(s.db, 'users', uid, 'messages'), s.F.orderBy('ts', 'desc'), s.F.limit(150));
+    return s.F.onSnapshot(q, snap => cb(snap.docs.map(d => Object.assign({ id: d.id }, d.data())).reverse()), () => cb([]));
   },
   async idToken() {
     const s = await sdk();

@@ -1249,5 +1249,7 @@ window.EN={
 "فوق": "Up",
 "تحت": "Down",
 "الاسم بلغة تانية (اختياري)": "Name in the other language (optional)",
-"الاسم بلغة تانية": "Name in the other language"
+"الاسم بلغة تانية": "Name in the other language",
+"الكوبون ده مش من أكوادك": "This coupon is not one of your codes",
+"المبلغ أقل من المطلوب: ": "Amount is less than required: "
 };
