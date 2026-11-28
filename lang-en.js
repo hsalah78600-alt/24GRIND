@@ -1247,5 +1247,7 @@ window.EN={
 "أكل النهاردة": "Today's food",
 "أضف": "Add",
 "فوق": "Up",
-"تحت": "Down"
+"تحت": "Down",
+"الاسم بلغة تانية (اختياري)": "Name in the other language (optional)",
+"الاسم بلغة تانية": "Name in the other language"
 };

@@ -498,7 +498,7 @@ function foodMatches(q,cat,noCustom){
     if(cat==='fav'&&!S.favFoods.includes(f.n))return false;
     if(cat==='mine'&&f.cat!=='mine')return false;
     if(cat&&!['all','fav','mine'].includes(cat)&&f.cat!==cat)return false;
-    return !qq||f.q.includes(qq)});
+    return !qq||f.q.includes(qq)||biHit([f.n,f.e],qq)});
   const rank=f=>(S.favFoods.includes(f.n)?0:2)+(qq&&f.q.split(/\s+/).some(w=>w.startsWith(qq))?0:1);
   return L.map((f,i)=>[f,i]).sort((a,b)=>rank(a[0])-rank(b[0])||a[1]-b[1]).map(x=>x[0]);
 }
@@ -1868,7 +1868,7 @@ async function saveClientPlan(){
   const pg=e.program;
   if(pg&&pg.days.length){
     const days=pg.days.map((x,i)=>({n:(x.n||'').trim()||(_('يوم ')+(i+1)),ex:x.ex.slice()})).filter(x=>x.ex.length);
-    if(days.length){plan.program={name:(pg.name||'').trim(),sets:num(pg.sets),days};const used={};days.forEach(x=>x.ex.forEach(i=>used[i]=1));const cx=(pg.cx||[]).filter(x=>used[x.id]&&(x.n||'').trim()).map(x=>({id:x.id,n:x.n.trim(),m:x.m||'',e:x.e||''}));if(cx.length)plan.program.cx=cx}
+    if(days.length){plan.program={name:(pg.name||'').trim(),sets:num(pg.sets),days};const used={};days.forEach(x=>x.ex.forEach(i=>used[i]=1));const cx=(pg.cx||[]).filter(x=>used[x.id]&&(x.n||'').trim()).map(x=>({id:x.id,n:x.n.trim(),n2:(x.n2||'').trim(),m:x.m||'',e:x.e||''}));if(cx.length)plan.program.cx=cx}
   }
   toast(_('جاري الحفظ…'));
   try{await CLOUD.setPlan(c.uid,plan);U.cc.detail.plan=plan;U.cc.edit=null;dropDraft(c.uid);renderCoachApp();window.scrollTo(0,0);toast(_('اتحفظت الخطة وهتظهر عند العميل'))}
@@ -2019,7 +2019,7 @@ function vSet(){
 /* ================= layer (modals) ================= */
 function pickerList(q,m){
   q=(q||'').trim();
-  const list=allEx().filter(e=>(m==='الكل'||e.m===m)&&(!q||e.n.includes(q)||(e.e||'').includes(q)));
+  const list=allEx().filter(e=>(m==='الكل'||e.m===m)&&(!q||biHit([e.n,e.e,e.n2],q)));
   return list.map(e=>'<div class="row" style="margin-bottom:8px"><button class="btn alt block" style="flex:1;margin:0;text-align:start" data-act="'+(exLib(e.id)?'exinfo':'pick')+'" data-id="'+esc(e.id)+'">'+(window.exThumb?exThumb(e.id):'')+((U.pc||{})[e.id]?'<b style="color:#22c55e">✓'+(U.pc[e.id]>1?' ×'+U.pc[e.id]:'')+' </b>':'')+esc(e.n)+' <span class="muted">· '+esc(_(e.m))+(e.e?' · '+esc(_(e.e)):'')+'</span></button><button class="btn line sm" data-act="pick" data-id="'+esc(e.id)+'" aria-label="'+_('أضيف التمرين')+'">+</button><button class="btn line sm" data-act="unpick" data-id="'+esc(e.id)+'" aria-label="'+_('شيل التمرين')+'">−</button></div>').join('')||_('<div class="muted">مفيش نتايج. اعمل تمرين جديد من تحت.</div>');
 }
 function renderLayer(){
@@ -2027,7 +2027,7 @@ function renderLayer(){
   if(!m){L.innerHTML='';return}
   let b='';
   if(m==='picker'){
-    b=_('<div class="row sp"><h3 style="margin:0">اختار تمرين</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div><input id="psearch" placeholder="دوّر على تمرين" aria-label="بحث" style="margin:10px 0" value="')+esc(U.pq)+'">'+chips([['الكل','الكل']].concat(MUSCLES.map(x=>[x,x])),U.pm,'pm')+'<div id="plist">'+pickerList(U.pq,U.pm)+'</div>'+(_('<div class="card" style="margin-top:10px"><h3>تمرين جديد</h3><div class="grid2"><input id="cxn" placeholder="اسم التمرين" aria-label="اسم التمرين"><select id="cxm" aria-label="العضلة">')+MUSCLES.map(x=>'<option value="'+x+'">'+_(x)+'</option>').join('')+_('</select></div><button class="btn block" style="margin-top:10px" data-act="addcustomex">أضف التمرين</button></div>'));
+    b=_('<div class="row sp"><h3 style="margin:0">اختار تمرين</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div><input id="psearch" placeholder="دوّر على تمرين" aria-label="بحث" style="margin:10px 0" value="')+esc(U.pq)+'">'+chips([['الكل','الكل']].concat(MUSCLES.map(x=>[x,x])),U.pm,'pm')+'<div id="plist">'+pickerList(U.pq,U.pm)+'</div>'+(_('<div class="card" style="margin-top:10px"><h3>تمرين جديد</h3><div class="grid2"><input id="cxn" placeholder="اسم التمرين" aria-label="اسم التمرين"><select id="cxm" aria-label="العضلة">')+MUSCLES.map(x=>'<option value="'+x+'">'+_(x)+'</option>').join('')+_('</select></div><input id="cxn2" dir="auto" placeholder="الاسم بلغة تانية (اختياري)" aria-label="الاسم بلغة تانية" style="margin-top:8px"><button class="btn block" style="margin-top:10px" data-act="addcustomex">أضف التمرين</button></div>'));
   }else if(m==='exinfo'&&U.exi&&exLib(U.exi)){
     const x=exLib(U.exi);
     b='<div class="row sp"><h3 style="margin:0">'+esc(_(x.n))+_('</h3><button class="x" data-act="closemodal" aria-label="قفل">✕</button></div>')
@@ -2171,7 +2171,7 @@ document.addEventListener('click',function(ev){
    case 'unpick':{if(exRm(d.id)){exMark(d.id);toast(_('اتشال التمرين'))}else toast(_('التمرين مش مضاف'));break}
    case 'exadd':{if(exAdd(d.id))toast(_('اتضاف التمرين'));exClose();break}
    case 'exrm':{if(exRm(d.id))toast(_('اتشال التمرين'));else toast(_('التمرين مش مضاف'));exClose();break}
-   case 'addcustomex':{if(U.pickMode==='cplan'&&U.cc&&U.cc.edit&&U.cc.edit.program){addPlanEx();break}const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();S.customEx.push({id,n,m:$('#cxm').value,e:_('مخصص')});save();
+   case 'addcustomex':{if(U.pickMode==='cplan'&&U.cc&&U.cc.edit&&U.cc.edit.program){addPlanEx();break}const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));break}const id='cx'+uid();S.customEx.push({id,n,n2:(($('#cxn2')||{}).value||'').trim(),m:$('#cxm').value,e:_('مخصص')});save();
      if(U.pickMode==='routine'&&U.re){U.re.ex.push(id);U.modal='routine'}else if(S.active){S.active.exercises.push(newEx(id));U.modal=null}render();break}
    case 'addset':{const e=S.active.exercises[+d.i];const l=e.sets[e.sets.length-1]||{};e.sets.push({kg:l.kg||'',reps:l.reps||'',done:false});saveLocal();render();break}
    case 'delset':{const e=S.active.exercises[+d.i];if(e.sets.length>1)e.sets.pop();saveLocal();render();break}
@@ -2932,7 +2932,7 @@ setTimeout(offlineUi,0);
 window.sysUpdate=sysUpdate;window.offlineUi=offlineUi;
 
 /* ===== splash, tour, about footer, a11y ===== */
-const APP_BUILD='40';
+const APP_BUILD='41';
 (function(){const t=document.getElementById('toast');if(t){t.setAttribute('role','status');t.setAttribute('aria-live','polite')}
   const hide=()=>{const s=document.getElementById('splash');if(s){s.classList.add('out');setTimeout(()=>s.remove(),450)}};
   requestAnimationFrame(()=>setTimeout(hide,350));setTimeout(hide,3500);
@@ -3598,22 +3598,42 @@ function dashHtml(){
   return h}})();
 
 /* ===== free plan editing + bidi-safe user text ===== */
+/* ===== bilingual: Arabic <-> English search and display ===== */
+const hasAr=s=>/[\u0600-\u06FF]/.test(s||'');
+let _REV=null,_GL=null;
+function _bi(){
+  if(_REV)return;_REV={};_GL={};const EN=window.EN||{};
+  const add=(a,b)=>{const x=norm(a),y=norm(b);if(!x||!y||x===y)return;(_GL[x]=_GL[x]||[]).includes(y)||_GL[x].push(y)};
+  Object.keys(EN).forEach(k=>{const v=EN[k];if(typeof v!=='string'||/[<>{}]/.test(k)||k.length>60)return;_REV[v]=k;
+    const a=k.split(/\s+/),b=v.split(/\s+/);if(a.length===b.length&&a.length<=4)a.forEach((w,i)=>{add(w,b[i]);add(b[i],w)})});
+}
+function otherName(s){_bi();if(!s)return'';return LANG==='en'?(_REV[s]||''):(window.EN&&window.EN[s]||'')}
+function biHit(fields,q){
+  _bi();const tx=fields.filter(Boolean).map(f=>norm(f)+' '+norm(otherName(f))).join(' ');
+  const toks=norm(q).split(/\s+/).filter(Boolean);
+  return toks.every(t=>tx.includes(t)||(_GL[t]||[]).some(a=>tx.includes(a)));
+}
+function dispEx(e){
+  if(!e.n2)return e;const wantAr=LANG==='ar';
+  if(hasAr(e.n)===wantAr||hasAr(e.n2)!==wantAr)return e;
+  return Object.assign({},e,{n:e.n2,n2:e.n});
+}
 function planCx(){
   try{
     if(U.cc&&U.cc.edit&&U.cc.edit.program)return U.cc.edit.program.cx||[];
     const pg=C.plan&&C.plan.program;return (pg&&pg.cx)||[];
   }catch(e){return[]}
 }
-(function(){const b=S_customEx;S_customEx=function(){const a=b(),x=planCx();if(!x.length)return a;const ids={};a.forEach(e=>ids[e.id]=1);return a.concat(x.filter(e=>!ids[e.id]))}})();
+(function(){const b=S_customEx;S_customEx=function(){const a=b().slice(),x=planCx();const ids={};a.forEach(e=>ids[e.id]=1);x.forEach(e=>{if(!ids[e.id])a.push(e)});return a.map(dispEx)}})();
 function planExName(id,exN){
   const pg=U.cc&&U.cc.edit&&U.cc.edit.program,k=pg&&(pg.cx||[]).findIndex(x=>x.id===id);
-  if(pg&&k>=0)return '<input dir="auto" data-cf="program.cx.'+k+'.n" value="'+esc(pg.cx[k].n)+'" aria-label="'+esc(_('اسم التمرين'))+'" style="margin:0">';
+  if(pg&&k>=0)return '<input dir="auto" data-cf="program.cx.'+k+'.n" value="'+esc(pg.cx[k].n)+'" aria-label="'+esc(_('اسم التمرين'))+'" style="margin:0"><input dir="auto" data-cf="program.cx.'+k+'.n2" value="'+esc(pg.cx[k].n2||'')+'" placeholder="'+esc(_('الاسم بلغة تانية (اختياري)'))+'" aria-label="'+esc(_('الاسم بلغة تانية'))+'" style="margin:6px 0 0;font-size:13px">';
   return '<span dir="auto">'+esc(exN(id))+'</span>';
 }
 function addPlanEx(){
   const n=$('#cxn').value.trim();if(!n){toast(_('اكتب اسم التمرين'));return}
   const pg=U.cc.edit.program;pg.cx=pg.cx||[];
-  const id='pc'+uid();pg.cx.push({id,n,m:$('#cxm').value,e:_('مخصص')});
+  const id='pc'+uid();pg.cx.push({id,n,n2:(($('#cxn2')||{}).value||'').trim(),m:$('#cxm').value,e:_('مخصص')});
   pg.days[U.pi].ex.push(id);U.modal=null;renderLayer();renderCoachApp();toast(_('اتضاف التمرين'));
 }
 (function(){
